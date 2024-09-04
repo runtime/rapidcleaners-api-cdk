@@ -8,6 +8,8 @@ import { App, Stack, RemovalPolicy } from 'aws-cdk-lib';
 import { NodejsFunction, NodejsFunctionProps } from 'aws-cdk-lib/aws-lambda-nodejs';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as cloudwatch from 'aws-cdk-lib/aws-cloudwatch';
+//import { LogGroup, RetentionDays } from 'aws-cdk-lib/aws-cloudwatch';
+import * as iam from 'aws-cdk-lib/aws-iam';
 import { join } from 'path';
 
 export class RapidcleanersApiCdkStack extends cdk.Stack {
@@ -52,7 +54,17 @@ export class RapidcleanersApiCdkStack extends cdk.Stack {
       ],
     });
 
-    // Define Lambda function properties
+    // DynamoDB Backup to S3 Permissions
+    const dynamoBackupRole = new iam.Role(this, 'DynamoBackupRole', {
+      assumedBy: new iam.ServicePrincipal('dynamodb.amazonaws.com'),
+    });
+
+    rcDataBucket.grantReadWrite(dynamoBackupRole);
+    estimatesTable.grantFullAccess(dynamoBackupRole);
+    usersTable.grantFullAccess(dynamoBackupRole);
+    locationsTable.grantFullAccess(dynamoBackupRole);
+
+    // Lambda function properties
     const nodejsFunctionProps: NodejsFunctionProps = {
       bundling: { externalModules: ['aws-sdk'] },
       depsLockFilePath: join(__dirname, '../package-lock.json'),
@@ -165,7 +177,7 @@ export class RapidcleanersApiCdkStack extends cdk.Stack {
     // API Gateway Setup
     const rapidcleanAPI = new api.RestApi(this, 'RapidCleanAPI', {
       restApiName: 'rc-service',
-      description: 'AWS CDK IaC for API Gateway with Lambda Proxy integration',
+      description: 'AWS API Gateway with Lambda Proxy integration',
       deployOptions: { stageName: 'prod' },
     });
 
@@ -206,20 +218,23 @@ export class RapidcleanersApiCdkStack extends cdk.Stack {
     addCorsOptions(singleLocation);
 
     // Enable CloudWatch Logs and Metrics for Lambda functions
-    new cloudwatch.LogGroup(this, 'EstimatesLambdaLogs', {
-      logGroupName: `/aws/lambda/${getAllEstimatesLambda.functionName}`,
-      retention: cloudwatch.RetentionDays.ONE_WEEK,
-    });
 
-    new cloudwatch.LogGroup(this, 'UsersLambdaLogs', {
-      logGroupName: `/aws/lambda/${getAllUsersLambda.functionName}`,
-      retention: cloudwatch.RetentionDays.ONE_WEEK,
-    });
+    // new LogGroup(this, 'UsersLambdaLogs', {
+    //   logGroupName: `/aws/lambda/${getAllUsersLambda.functionName}`,
+    //   retention: RetentionDays.ONE_WEEK,
+    // });
+    //
+    // new LogGroup(this, 'LocationsLambdaLogs', {
+    //   logGroupName: `/aws/lambda/${getAllLocationsLambda.functionName}`,
+    //   retention: RetentionDays.ONE_WEEK,
+    // });
+    //
+    //
+    // new LogGroup(this, 'EstimatesLambdaLogs', {
+    //   logGroupName: `/aws/lambda/${getAllEstimatesLambda.functionName}`,
+    //   retention: RetentionDays.ONE_WEEK,
+    // });
 
-    new cloudwatch.LogGroup(this, 'LocationsLambdaLogs', {
-      logGroupName: `/aws/lambda/${getAllLocationsLambda.functionName}`,
-      retention: cloudwatch.RetentionDays.ONE_WEEK,
-    });
 
     // Output API Gateway URL
     new cdk.CfnOutput(this, 'HTTP API Url', {
@@ -252,5 +267,3 @@ export function addCorsOptions(apiResource: IResource) {
     }],
   });
 }
-
-
