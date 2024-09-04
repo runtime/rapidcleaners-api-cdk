@@ -47,7 +47,7 @@ export class RapidcleanersApiCdkStack extends cdk.Stack {
       autoDeleteObjects: true,
       cors: [
         {
-          allowedOrigins: ['http://localhost:3000'],
+          allowedOrigins: ['*'],
           allowedMethods: [s3.HttpMethods.GET, s3.HttpMethods.PUT],
           allowedHeaders: ['*'],
         },
@@ -90,7 +90,14 @@ export class RapidcleanersApiCdkStack extends cdk.Stack {
 
     const createEstimateLambda = new NodejsFunction(this, 'createEstimateLambda', {
       entry: join(__dirname, '../functions', 'createEstimate.js'),
-      ...nodejsFunctionProps,
+      runtime: Runtime.NODEJS_16_X,
+      handler: 'handler',
+      bundling: {
+        externalModules: ['aws-sdk'],
+      },
+      environment: {
+        TABLE_NAME: estimatesTable.tableName, // Ensure this is correct
+      },
     });
 
     const updateEstimateLambda = new NodejsFunction(this, 'updateEstimateLambda', {
