@@ -262,7 +262,7 @@ export function addCorsOptions(apiResource: IResource) {
       },
     }],
     passthroughBehavior: PassthroughBehavior.WHEN_NO_MATCH,
-    requestTemplates: { "application/json": "{\"statusCode\": 200}" },
+    requestTemplates: { "application/json": JSON.stringify("{\"statusCode\": 200}" )},
   }), {
     methodResponses: [{
       statusCode: '200',
