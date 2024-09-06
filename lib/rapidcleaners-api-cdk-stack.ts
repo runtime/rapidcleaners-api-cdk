@@ -80,7 +80,14 @@ export class RapidcleanersApiCdkStack extends cdk.Stack {
     // Lambda Functions for CRUD Operations on Estimates
     const getAllEstimatesLambda = new NodejsFunction(this, 'getAllEstimatesLambda', {
       entry: join(__dirname, '../functions', 'getAllEstimates.js'),
-      ...nodejsFunctionProps,
+      runtime: Runtime.NODEJS_16_X,
+      handler: 'handler',
+      bundling: {
+        externalModules: ['aws-sdk'],
+      },
+      environment: {
+        TABLE_NAME: estimatesTable.tableName, // Ensure this is correct
+      },
     });
 
     const getOneEstimateLambda = new NodejsFunction(this, 'getOneEstimateLambda', {
@@ -99,6 +106,11 @@ export class RapidcleanersApiCdkStack extends cdk.Stack {
         TABLE_NAME: estimatesTable.tableName, // Ensure this is correct
       },
     });
+
+    // const createEstimateLambda = new NodejsFunction(this, 'createEstimateLambda', {
+    //   entry: join(__dirname, '../functions', 'createEstimate.js'),
+    //   ...nodejsFunctionProps,
+    // });
 
     const updateEstimateLambda = new NodejsFunction(this, 'updateEstimateLambda', {
       entry: join(__dirname, '../functions', 'updateEstimate.js'),
@@ -181,12 +193,18 @@ export class RapidcleanersApiCdkStack extends cdk.Stack {
     locationsTable.grantReadWriteData(updateLocationLambda);
     locationsTable.grantReadWriteData(deleteLocationLambda);
 
+    // doing this a different way (see below)
+    //const createEstimateIntegration = new api.LambdaIntegration(createEstimateLambda)
+
     // API Gateway Setup
     const rapidcleanAPI = new api.RestApi(this, 'RapidCleanAPI', {
       restApiName: 'rc-service',
       description: 'AWS API Gateway with Lambda Proxy integration',
       deployOptions: { stageName: 'prod' },
     });
+
+    // added this from experience
+    addCorsOptions(rapidcleanAPI.root);
 
     // API Gateway Resources and Methods for Estimates
     const estimates = rapidcleanAPI.root.addResource('estimates');
@@ -224,24 +242,17 @@ export class RapidcleanersApiCdkStack extends cdk.Stack {
     singleLocation.addMethod('DELETE', new api.LambdaIntegration(deleteLocationLambda));
     addCorsOptions(singleLocation);
 
-    // Enable CloudWatch Logs and Metrics for Lambda functions
-
-    // new LogGroup(this, 'UsersLambdaLogs', {
-    //   logGroupName: `/aws/lambda/${getAllUsersLambda.functionName}`,
-    //   retention: RetentionDays.ONE_WEEK,
-    // });
+    // const proxy = estimates.addProxy({
+    //   anyMethod: true,
+    //   defaultMethodOptions: {
+    //     authorizationType: api.AuthorizationType.NONE,
+    //     requestParameters: {
+    //       'method.request.path.proxy': true
+    //     }
+    //   }
+    // })
     //
-    // new LogGroup(this, 'LocationsLambdaLogs', {
-    //   logGroupName: `/aws/lambda/${getAllLocationsLambda.functionName}`,
-    //   retention: RetentionDays.ONE_WEEK,
-    // });
-    //
-    //
-    // new LogGroup(this, 'EstimatesLambdaLogs', {
-    //   logGroupName: `/aws/lambda/${getAllEstimatesLambda.functionName}`,
-    //   retention: RetentionDays.ONE_WEEK,
-    // });
-
+    // addCorsOptions(proxy);
 
     // Output API Gateway URL
     new cdk.CfnOutput(this, 'HTTP API Url', {
@@ -257,7 +268,7 @@ export function addCorsOptions(apiResource: IResource) {
       statusCode: '200',
       responseParameters: {
         'method.response.header.Access-Control-Allow-Headers': "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'",
-        'method.response.header.Access-Control-Allow-Origin': "'*'",
+        'method.response.header.Access-Control-Allow-Origin': "'localhost:3000'",
         'method.response.header.Access-Control-Allow-Methods': "'OPTIONS,GET,PUT,POST,DELETE'",
       },
     }],
