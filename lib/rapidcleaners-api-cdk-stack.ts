@@ -208,9 +208,10 @@ export class RapidcleanersApiCdkStack extends cdk.Stack {
 
     // API Gateway Resources and Methods for Estimates
     const estimates = rapidcleanAPI.root.addResource('estimates');
-    estimates.addMethod('GET', new api.LambdaIntegration(getAllEstimatesLambda));
     estimates.addMethod('POST', new api.LambdaIntegration(createEstimateLambda));
+    estimates.addMethod('GET', new api.LambdaIntegration(getAllEstimatesLambda));
     addCorsOptions(estimates);
+
 
     const singleEstimate = estimates.addResource('{estimateId}');
     singleEstimate.addMethod('GET', new api.LambdaIntegration(getOneEstimateLambda));
