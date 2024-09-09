@@ -269,12 +269,14 @@ export function addCorsOptions(apiResource: IResource) {
       statusCode: '200',
       responseParameters: {
         'method.response.header.Access-Control-Allow-Headers': "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'",
-        'method.response.header.Access-Control-Allow-Origin': "'localhost:3000'",
-        'method.response.header.Access-Control-Allow-Methods': "'OPTIONS,GET,PUT,POST,DELETE'",
+        'method.response.header.Access-Control-Allow-Methods': "'https://15jfs5kpsb.execute-api.us-east-1.amazonaws.com/prod/estimates'",
+        'method.response.header.Access-Control-Allow-Origin': "'*'",
       },
     }],
     passthroughBehavior: PassthroughBehavior.WHEN_NO_MATCH,
-    requestTemplates: { "application/json": JSON.stringify("{\"statusCode\": 200}" )},
+    requestTemplates: {
+      "application/json": "{\"statusCode\": 200}"  // Properly formatted JSON
+    },
   }), {
     methodResponses: [{
       statusCode: '200',
