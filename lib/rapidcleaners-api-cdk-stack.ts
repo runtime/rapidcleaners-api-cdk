@@ -269,13 +269,14 @@ export function addCorsOptions(apiResource: IResource) {
       statusCode: '200',
       responseParameters: {
         'method.response.header.Access-Control-Allow-Headers': "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'",
-        'method.response.header.Access-Control-Allow-Methods': "'https://15jfs5kpsb.execute-api.us-east-1.amazonaws.com/prod/estimates'",
-        'method.response.header.Access-Control-Allow-Origin': "'*'",
+        'method.response.header.Access-Control-Allow-Methods': "'GET,POST,OPTIONS'",
+        'method.response.header.Access-Control-Allow-Origin': "'http://rapidcleanstage.s3-website-us-east-1.amazonaws.com'",  // No trailing slash
+        'method.response.header.Access-Control-Max-Age': "'0'", // Disable CORS caching for testing
       },
     }],
     passthroughBehavior: PassthroughBehavior.WHEN_NO_MATCH,
     requestTemplates: {
-      "application/json": "{\"statusCode\": 200}"  // Properly formatted JSON
+      "application/json": "{\"statusCode\": 200}"
     },
   }), {
     methodResponses: [{
@@ -284,6 +285,7 @@ export function addCorsOptions(apiResource: IResource) {
         'method.response.header.Access-Control-Allow-Headers': true,
         'method.response.header.Access-Control-Allow-Methods': true,
         'method.response.header.Access-Control-Allow-Origin': true,
+        'method.response.header.Access-Control-Max-Age': true, // Ensure this is included in the response
       },
     }],
   });
