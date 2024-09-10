@@ -270,7 +270,7 @@ export function addCorsOptions(apiResource: IResource) {
       responseParameters: {
         'method.response.header.Access-Control-Allow-Headers': "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'",
         'method.response.header.Access-Control-Allow-Methods': "'GET,POST,OPTIONS'",
-        'method.response.header.Access-Control-Allow-Origin': "'http://rapidcleanstage.s3-website-us-east-1.amazonaws.com'",  // No trailing slash
+        'method.response.header.Access-Control-Allow-Origin': "'http://localhost:3000'",  // No trailing slash
         'method.response.header.Access-Control-Max-Age': "'0'", // Disable CORS caching for testing
       },
     }],
