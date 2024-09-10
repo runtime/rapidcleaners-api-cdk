@@ -3,8 +3,7 @@
     "target": "ES2020",
     "module": "commonjs",
     "lib": [
-      "es2020",
-      "dom"
+      "es2020"
     ],
     "declaration": true,
     "strict": true,
@@ -12,6 +11,9 @@
     "strictNullChecks": true,
     "noImplicitThis": true,
     "alwaysStrict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
     "noUnusedLocals": false,
     "noUnusedParameters": false,
     "noImplicitReturns": true,
@@ -24,8 +26,10 @@
       "./node_modules/@types"
     ]
   },
+  "include": ["**/*.ts"],
   "exclude": [
     "node_modules",
     "cdk.out"
   ]
 }
+
