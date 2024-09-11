@@ -114,7 +114,14 @@ export class RapidcleanersApiCdkStack extends cdk.Stack {
 
     const updateEstimateLambda = new NodejsFunction(this, 'updateEstimateLambda', {
       entry: join(__dirname, '../functions', 'updateEstimate.js'),
-      ...nodejsFunctionProps,
+      runtime: Runtime.NODEJS_16_X,
+      handler: 'handler',
+      bundling: {
+        externalModules: ['aws-sdk'],
+      },
+      environment: {
+        TABLE_NAME: estimatesTable.tableName, // Ensure this is correct
+      },
     });
 
     const deleteEstimateLambda = new NodejsFunction(this, 'deleteEstimateLambda', {
@@ -269,9 +276,9 @@ export function addCorsOptions(apiResource: IResource) {
       statusCode: '200',
       responseParameters: {
         'method.response.header.Access-Control-Allow-Headers': "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'",
-        'method.response.header.Access-Control-Allow-Methods': "'GET,POST,OPTIONS'",
+        'method.response.header.Access-Control-Allow-Methods': "'GET,POST,PUT,OPTIONS'",
         'method.response.header.Access-Control-Allow-Origin': "'http://localhost:3000'",  // No trailing slash
-        'method.response.header.Access-Control-Max-Age': "'0'", // Disable CORS caching for testing
+        'method.response.header.Access-Control-Max-Age': "'600'", // Disable CORS caching for testing
       },
     }],
     passthroughBehavior: PassthroughBehavior.WHEN_NO_MATCH,
