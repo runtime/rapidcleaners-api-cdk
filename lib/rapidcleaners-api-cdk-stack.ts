@@ -114,7 +114,14 @@ export class RapidcleanersApiCdkStack extends cdk.Stack {
 
     const updateEstimateLambda = new NodejsFunction(this, 'updateEstimateLambda', {
       entry: join(__dirname, '../functions', 'updateEstimate.js'),
-      ...nodejsFunctionProps,
+      runtime: Runtime.NODEJS_16_X,
+      handler: 'handler',
+      bundling: {
+        externalModules: ['aws-sdk'],
+      },
+      environment: {
+        TABLE_NAME: estimatesTable.tableName, // Ensure this is correct
+      },
     });
 
     const deleteEstimateLambda = new NodejsFunction(this, 'deleteEstimateLambda', {
@@ -130,12 +137,26 @@ export class RapidcleanersApiCdkStack extends cdk.Stack {
 
     const getOneUserLambda = new NodejsFunction(this, 'getOneUserLambda', {
       entry: join(__dirname, '../functions', 'getOneUser.js'),
-      ...nodejsFunctionProps,
+      runtime: Runtime.NODEJS_16_X,
+      handler: 'handler',
+      bundling: {
+        externalModules: ['aws-sdk'],
+      },
+      environment: {
+        TABLE_NAME: usersTable.tableName, // Ensure this is correct
+      },
     });
 
     const createUserLambda = new NodejsFunction(this, 'createUserLambda', {
       entry: join(__dirname, '../functions', 'createUser.js'),
-      ...nodejsFunctionProps,
+      runtime: Runtime.NODEJS_16_X,
+      handler: 'handler',
+      bundling: {
+        externalModules: ['aws-sdk'],
+      },
+      environment: {
+        TABLE_NAME: usersTable.tableName, // Ensure this is correct
+      },
     });
 
     const updateUserLambda = new NodejsFunction(this, 'updateUserLambda', {
@@ -243,17 +264,6 @@ export class RapidcleanersApiCdkStack extends cdk.Stack {
     singleLocation.addMethod('DELETE', new api.LambdaIntegration(deleteLocationLambda));
     addCorsOptions(singleLocation);
 
-    // const proxy = estimates.addProxy({
-    //   anyMethod: true,
-    //   defaultMethodOptions: {
-    //     authorizationType: api.AuthorizationType.NONE,
-    //     requestParameters: {
-    //       'method.request.path.proxy': true
-    //     }
-    //   }
-    // })
-    //
-    // addCorsOptions(proxy);
 
     // Output API Gateway URL
     new cdk.CfnOutput(this, 'HTTP API Url', {
@@ -269,9 +279,9 @@ export function addCorsOptions(apiResource: IResource) {
       statusCode: '200',
       responseParameters: {
         'method.response.header.Access-Control-Allow-Headers': "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'",
-        'method.response.header.Access-Control-Allow-Methods': "'GET,POST,OPTIONS'",
+        'method.response.header.Access-Control-Allow-Methods': "'GET,POST,PUT,OPTIONS'",
         'method.response.header.Access-Control-Allow-Origin': "'http://localhost:3000'",  // No trailing slash
-        'method.response.header.Access-Control-Max-Age': "'0'", // Disable CORS caching for testing
+        'method.response.header.Access-Control-Max-Age': "'600'", // Disable CORS caching for testing
       },
     }],
     passthroughBehavior: PassthroughBehavior.WHEN_NO_MATCH,
