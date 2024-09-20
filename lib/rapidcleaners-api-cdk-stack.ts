@@ -35,6 +35,13 @@ export class RapidcleanersApiCdkStack extends cdk.Stack {
       removalPolicy: RemovalPolicy.DESTROY,
     });
 
+    // GSI for Locations Table
+    locationsTable.addGlobalSecondaryIndex({
+      indexName: 'userId-index', // Name of the GSI
+      partitionKey: { name: 'userId', type: dynamodb.AttributeType.STRING },
+      projectionType: dynamodb.ProjectionType.ALL, // You can use KEYS_ONLY, INCLUDE, or ALL depending on your needs
+    });
+
     // S3 Buckets
     const rcDataBucket = new s3.Bucket(this, 'rc-data-s3', {
       removalPolicy: RemovalPolicy.DESTROY,
@@ -177,13 +184,40 @@ export class RapidcleanersApiCdkStack extends cdk.Stack {
 
     const getOneLocationLambda = new NodejsFunction(this, 'getOneLocationLambda', {
       entry: join(__dirname, '../functions', 'getOneLocation.js'),
-      ...nodejsFunctionProps,
+      runtime: Runtime.NODEJS_16_X,
+      handler: 'handler',
+      bundling: {
+        externalModules: ['aws-sdk'],
+      },
+      environment: {
+        TABLE_NAME: locationsTable.tableName, // Ensure this is correct
+      },
+    });
+
+    const getOneLocationByUserId = new NodejsFunction(this, 'getOneLocationByUserIdLambda', {
+      entry: join(__dirname, '../functions', 'getOneLocationByUserId.js'),
+      runtime: Runtime.NODEJS_16_X,
+      handler: 'handler',
+      bundling: {
+        externalModules: ['aws-sdk'],
+      },
+      environment: {
+        TABLE_NAME: locationsTable.tableName, // Ensure this is correct
+      },
     });
 
     const createLocationLambda = new NodejsFunction(this, 'createLocationLambda', {
       entry: join(__dirname, '../functions', 'createLocation.js'),
-      ...nodejsFunctionProps,
+      runtime: Runtime.NODEJS_16_X,
+      handler: 'handler',
+      bundling: {
+        externalModules: ['aws-sdk'],
+      },
+      environment: {
+        TABLE_NAME: locationsTable.tableName, // Ensure this is correct
+      },
     });
+
 
     const updateLocationLambda = new NodejsFunction(this, 'updateLocationLambda', {
       entry: join(__dirname, '../functions', 'updateLocation.js'),
@@ -210,6 +244,7 @@ export class RapidcleanersApiCdkStack extends cdk.Stack {
 
     locationsTable.grantReadWriteData(getAllLocationsLambda);
     locationsTable.grantReadWriteData(getOneLocationLambda);
+    locationsTable.grantReadWriteData(getOneLocationByUserId);
     locationsTable.grantReadWriteData(createLocationLambda);
     locationsTable.grantReadWriteData(updateLocationLambda);
     locationsTable.grantReadWriteData(deleteLocationLambda);
@@ -263,6 +298,10 @@ export class RapidcleanersApiCdkStack extends cdk.Stack {
     singleLocation.addMethod('PUT', new api.LambdaIntegration(updateLocationLambda));
     singleLocation.addMethod('DELETE', new api.LambdaIntegration(deleteLocationLambda));
     addCorsOptions(singleLocation);
+
+    const locationByUser = locations.addResource('user').addResource('{userId}');
+    locationByUser.addMethod('GET', new api.LambdaIntegration(getOneLocationByUserId)); // Get one location by userId
+    addCorsOptions(locationByUser);
 
 
     // Output API Gateway URL
