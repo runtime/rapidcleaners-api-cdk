@@ -93,6 +93,32 @@ export class RapidcleanersApiCdkStack extends cdk.Stack {
     };
 
     // Lambda Functions for CRUD Operations on Estimates
+
+    const createEstimateLambda = new NodejsFunction(this, 'createEstimateLambda', {
+      entry: join(__dirname, '../functions', 'createEstimate.js'),
+      runtime: Runtime.NODEJS_16_X,
+      handler: 'handler',
+      bundling: {
+        externalModules: ['aws-sdk'],
+      },
+      environment: {
+        TABLE_NAME: estimatesTable.tableName, // Ensure this is correct
+      },
+    });
+
+
+    const updateEstimateLambda = new NodejsFunction(this, 'updateEstimateLambda', {
+      entry: join(__dirname, '../functions', 'updateEstimate.js'),
+      runtime: Runtime.NODEJS_16_X,
+      handler: 'handler',
+      bundling: {
+        externalModules: ['aws-sdk'],
+      },
+      environment: {
+        TABLE_NAME: estimatesTable.tableName, // Ensure this is correct
+      },
+    });
+
     const getAllEstimatesLambda = new NodejsFunction(this, 'getAllEstimatesLambda', {
       entry: join(__dirname, '../functions', 'getAllEstimates.js'),
       runtime: Runtime.NODEJS_16_X,
@@ -110,34 +136,6 @@ export class RapidcleanersApiCdkStack extends cdk.Stack {
       ...nodejsFunctionProps,
     });
 
-    const createEstimateLambda = new NodejsFunction(this, 'createEstimateLambda', {
-      entry: join(__dirname, '../functions', 'createEstimate.js'),
-      runtime: Runtime.NODEJS_16_X,
-      handler: 'handler',
-      bundling: {
-        externalModules: ['aws-sdk'],
-      },
-      environment: {
-        TABLE_NAME: estimatesTable.tableName, // Ensure this is correct
-      },
-    });
-
-    // const createEstimateLambda = new NodejsFunction(this, 'createEstimateLambda', {
-    //   entry: join(__dirname, '../functions', 'createEstimate.js'),
-    //   ...nodejsFunctionProps,
-    // });
-
-    const updateEstimateLambda = new NodejsFunction(this, 'updateEstimateLambda', {
-      entry: join(__dirname, '../functions', 'updateEstimate.js'),
-      runtime: Runtime.NODEJS_16_X,
-      handler: 'handler',
-      bundling: {
-        externalModules: ['aws-sdk'],
-      },
-      environment: {
-        TABLE_NAME: estimatesTable.tableName, // Ensure this is correct
-      },
-    });
 
     const deleteEstimateLambda = new NodejsFunction(this, 'deleteEstimateLambda', {
       entry: join(__dirname, '../functions', 'deleteEstimate.js'),
@@ -249,6 +247,18 @@ export class RapidcleanersApiCdkStack extends cdk.Stack {
       },
     });
 
+    const getAllBookingsLambda = new NodejsFunction(this, 'getAllBookingsLambda', {
+      entry: join(__dirname, '../functions', 'getAllBookings.js'),
+      runtime: Runtime.NODEJS_16_X,
+      handler: 'handler',
+      bundling: {
+        externalModules: ['aws-sdk'],
+      },
+      environment: {
+        TABLE_NAME: bookingsTable.tableName, // Ensure this is correct
+      },
+    });
+
     const updateBookingLambda = new NodejsFunction(this, 'updateBookingLambda', {
       entry: join(__dirname, '../functions', 'updateBooking.js'),
       runtime: Runtime.NODEJS_16_X,
@@ -260,6 +270,8 @@ export class RapidcleanersApiCdkStack extends cdk.Stack {
         TABLE_NAME: bookingsTable.tableName, // Ensure this is correct
       },
     });
+
+
 
     // Grant DynamoDB permissions to Lambda functions
     estimatesTable.grantReadWriteData(getAllEstimatesLambda);
@@ -282,11 +294,8 @@ export class RapidcleanersApiCdkStack extends cdk.Stack {
     locationsTable.grantReadWriteData(deleteLocationLambda);
 
     bookingsTable.grantReadWriteData(createBookingLambda);
-    bookingsTable.grantReadWriteData(updateBookingLambda);
-
-
-    // doing this a different way (see below)
-    //const createEstimateIntegration = new api.LambdaIntegration(createEstimateLambda)
+    //bookingsTable.grantReadWriteData(updateBookingLambda);
+    //bookingsTable.grantReadWriteData(getAllBookingsLambda);
 
     // API Gateway Setup
     const rapidcleanAPI = new api.RestApi(this, 'RapidCleanAPI', {
@@ -300,9 +309,14 @@ export class RapidcleanersApiCdkStack extends cdk.Stack {
     addCorsOptions(rapidcleanAPI.root);
 
     // cal.com callback that sends the booking id. we create a booking
-    const calcomWebhook = rapidcleanAPI.root.addResource('calcom-webhook');
-    calcomWebhook.addMethod('POST', new api.LambdaIntegration(createBookingLambda));
-    addCorsOptions(calcomWebhook);
+    // const calcomWebhook = rapidcleanAPI.root.addResource('calcom-webhook');
+    // calcomWebhook.addMethod('POST', new api.LambdaIntegration(createBookingLambda));
+
+    const bookings = rapidcleanAPI.root.addResource('bookings');
+    bookings.addMethod('POST', new api.LambdaIntegration(createBookingLambda));
+    //bookings.addMethod('GET', new api.LambdaIntegration(getAllBookingsLambda));
+    addCorsOptions(bookings);
+
 
 
     // API Gateway Resources and Methods for Estimates

@@ -1,61 +1,47 @@
-// functions/createBooking.js
-
-"use strict";
-
-var AWS = require("aws-sdk");
-var dynamoDb = new AWS.DynamoDB.DocumentClient();
-var TABLE_NAME = process.env.TABLE_NAME;
+// BookingCreate Lambda function
+const AWS = require('aws-sdk');
+const dynamoDb = new AWS.DynamoDB.DocumentClient();
+const TABLE_NAME = process.env.TABLE_NAME;
 
 exports.handler = async (event) => {
-    console.log("[createBooking] Received event:", JSON.stringify(event, null, 2));
-
     try {
-        const requestBody = JSON.parse(event.body);
-        const { payload } = requestBody;
-        console.log("[createBooking] payload:", payload);
-
-        // Create a new booking entry with additional fields for address and duration
-        const bookingEntry = {
-            bookingId: String(payload.bookingId), // Ensure bookingId is stored as a string
-            userEmail: payload.attendees[0].email,
-            startTime: String(payload.startTime),
-            endTime: String(payload.endTime),
-            duration: payload.length, // Convert duration to string as well
-            address: String(payload.location) || "unknown address",
-            status: payload.status,
-            eventTitle: String(payload.eventTitle),
-            estimateId: null // Initially null until the estimate is linked
-        };
-
+        const body = JSON.parse(event.body);
+        console.log('[createBooking] body:', body);
+        const bookingId = body.bookingId;
+        const bookingDetails = body.bookingDetails;
+        // const estimateId = body.bookingDetails.estimateId;
+        // const locationId = body.bookingDetails.locationId;
+        // const userId = body.bookingDetails.userId;
+        // const name = body.bookingDetails.name || "unknown";
+        // const email = body.bookingDetails.email || "unknown";
+        // const phone = body.bookingDetails.phone || "unknown";
+        // const location = body.bookingDetails.location || "unknown address";
+        // const start = body.bookingDetails.start;
+        // const end = body.bookingDetails.end;
+        // const duration = body.bookingDetails.duration || 0;
+        // const status = body.status || "pending";
+        // const eventTitle = body.bookingDetails.eventTitle || "N/A";
 
         const params = {
             TableName: TABLE_NAME,
-            Item: bookingEntry
+            Item: {
+                bookingId,
+                bookingDetails,
+            },
         };
 
+
         await dynamoDb.put(params).promise();
-        console.log("Booking entry created:", bookingEntry);
 
         return {
             statusCode: 200,
-            headers: {
-                "Content-Type": "application/json",
-                "Access-Control-Allow-Origin": "*",
-                "Access-Control-Allow-Methods": "POST,OPTIONS",
-            },
-            body: JSON.stringify({ message: "Booking created successfully!", bookingEntry }),
+            body: JSON.stringify({ message: 'Booking created successfully', item: params.Item }),
         };
-
     } catch (error) {
-        console.error("Error creating booking:", error);
+        console.error('Error creating booking: ', error);
         return {
             statusCode: 500,
-            headers: {
-                "Content-Type": "application/json",
-                "Access-Control-Allow-Origin": "*",
-                "Access-Control-Allow-Methods": "POST,OPTIONS",
-            },
-            body: JSON.stringify({ message: "Internal Server Error", error: error.message }),
+            body: JSON.stringify({ message: 'Error creating booking', error }),
         };
     }
 };
