@@ -7,7 +7,6 @@ import { Runtime } from 'aws-cdk-lib/aws-lambda';
 import { App, Stack, RemovalPolicy } from 'aws-cdk-lib';
 import { NodejsFunction, NodejsFunctionProps } from 'aws-cdk-lib/aws-lambda-nodejs';
 import * as s3 from 'aws-cdk-lib/aws-s3';
-import * as cloudwatch from 'aws-cdk-lib/aws-cloudwatch';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import { join } from 'path';
 
@@ -15,9 +14,8 @@ export class RapidcleanersApiCdkStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
-   // const environment = process.env.NODE_ENV || 'stage';
-
-    const environment = 'stage'// 'dev', 'stage', 'prod'
+    // Define the environment - can be 'dev', 'stage', or 'prod'
+    const environment = 'stage'; // Adjust this manually as needed
 
     // Correct structure for allowedOrigins
     const allowedOriginsMap: { [key: string]: string[] } = {
@@ -26,6 +24,7 @@ export class RapidcleanersApiCdkStack extends cdk.Stack {
       prod: ['http://rapidcleanprod.s3-website-us-east-1.amazonaws.com'],
     };
 
+    // Get allowed origins based on the environment
     const currentAllowedOrigins = allowedOriginsMap[environment] || ['*'];
 
     // DynamoDB Tables
@@ -117,23 +116,21 @@ export class RapidcleanersApiCdkStack extends cdk.Stack {
       },
     });
 
-    // Add the rest of the Lambda functions following a similar pattern...
-
     // API Gateway Setup
     const rapidcleanAPI = new api.RestApi(this, `RapidCleanAPI-${environment}`, {
       restApiName: `rc-service-${environment}`,
       description: 'AWS API Gateway with Lambda Proxy integration',
-      deployOptions: { stageName: 'prod' },
+      deployOptions: { stageName: environment }, // Adjust this based on environment
     });
 
     // Add CORS Options and Lambda integrations to the API resources
     const bookings = rapidcleanAPI.root.addResource('bookings');
     bookings.addMethod('POST', new api.LambdaIntegration(createEstimateLambda));
-    addCorsOptions(bookings);
+    addCorsOptions(bookings, currentAllowedOrigins);
 
     const estimates = rapidcleanAPI.root.addResource('estimates');
     estimates.addMethod('POST', new api.LambdaIntegration(createEstimateLambda));
-    addCorsOptions(estimates);
+    addCorsOptions(estimates, currentAllowedOrigins);
 
     // Output API Gateway URL
     new cdk.CfnOutput(this, 'HTTP API Url', {
@@ -143,15 +140,17 @@ export class RapidcleanersApiCdkStack extends cdk.Stack {
 }
 
 // CORS configuration function
-export function addCorsOptions(apiResource: IResource) {
+export function addCorsOptions(apiResource: IResource, allowedOrigins: string[]) {
+  const origin = allowedOrigins.join(', '); // Join allowed origins into a string
+
   apiResource.addMethod('OPTIONS', new MockIntegration({
     integrationResponses: [{
       statusCode: '200',
       responseParameters: {
         'method.response.header.Access-Control-Allow-Headers': "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'",
         'method.response.header.Access-Control-Allow-Methods': "'GET,POST,PUT,OPTIONS'",
-        'method.response.header.Access-Control-Allow-Origin': "`${allowedOrigins.join(', ')}`",  // Change according to environment
-        'method.response.header.Access-Control-Max-Age': "'600'",
+        'method.response.header.Access-Control-Allow-Origin': `'${origin}'`,  // Properly wrap in quotes
+        'method.response.header.Access-Control-Max-Age': "'600'", // Disable CORS caching for testing
       },
     }],
     passthroughBehavior: PassthroughBehavior.WHEN_NO_MATCH,
