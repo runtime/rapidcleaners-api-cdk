@@ -15,7 +15,9 @@ export class RapidcleanersApiCdkStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
-    const environment = process.env.NODE_ENV || 'stage'; // 'dev', 'stage', 'prod'
+   // const environment = process.env.NODE_ENV || 'stage';
+
+    const environment = 'stage'// 'dev', 'stage', 'prod'
 
     // Correct structure for allowedOrigins
     const allowedOriginsMap: { [key: string]: string[] } = {
