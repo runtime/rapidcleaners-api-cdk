@@ -15,7 +15,8 @@ export class RapidcleanersApiCdkStack extends cdk.Stack {
     super(scope, id, props);
 
     // Define the environment - can be 'dev', 'stage', or 'prod'
-    const environment = 'stage'; // Adjust this manually as needed
+    let environment = 'stage'; // Adjust this manually as needed
+    console.log('RapidEnvironment:', environment)
 
     // Correct structure for allowedOrigins
     const allowedOriginsMap: { [key: string]: string[] } = {
@@ -27,23 +28,28 @@ export class RapidcleanersApiCdkStack extends cdk.Stack {
     // Get allowed origins based on the environment
     const currentAllowedOrigins = allowedOriginsMap[environment] || ['*'];
 
+    // Use RemovalPolicy.RETAIN for production and DESTROY for other environments
+    const removalPolicy =
+        environment === 'prod' ? RemovalPolicy.RETAIN : RemovalPolicy.DESTROY;
+
+
     // DynamoDB Tables
     const estimatesTable = new dynamodb.Table(this, `EstimatesTable-${environment}`, {
       partitionKey: { name: 'estimateId', type: dynamodb.AttributeType.STRING },
       tableName: `rc-estimates-${environment}`,
-      removalPolicy: RemovalPolicy.DESTROY,
+      removalPolicy: removalPolicy,
     });
 
     const usersTable = new dynamodb.Table(this, `UsersTable-${environment}`, {
       partitionKey: { name: 'userId', type: dynamodb.AttributeType.STRING },
       tableName: `rc-users-${environment}`,
-      removalPolicy: RemovalPolicy.DESTROY,
+      removalPolicy: removalPolicy,
     });
 
     const locationsTable = new dynamodb.Table(this, `LocationsTable-${environment}}`, {
       partitionKey: { name: 'locationId', type: dynamodb.AttributeType.STRING },
       tableName: `rc-locations-${environment}`,
-      removalPolicy: RemovalPolicy.DESTROY,
+      removalPolicy: removalPolicy,
     });
 
     // GSI for Locations Table
@@ -56,7 +62,7 @@ export class RapidcleanersApiCdkStack extends cdk.Stack {
     const bookingsTable = new dynamodb.Table(this, `RcBookingsTable-${environment}`, {
       partitionKey: { name: 'bookingId', type: dynamodb.AttributeType.STRING },
       tableName: `rc-bookings-${environment}`,
-      removalPolicy: RemovalPolicy.DESTROY,
+      removalPolicy: removalPolicy,
     });
 
     // S3 Buckets
