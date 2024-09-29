@@ -118,11 +118,11 @@ export class RapidcleanersApiCdkStack extends cdk.Stack {
       },
       environment: {
         TABLE_NAME: estimatesTable.tableName,
+        ALLOWED_ORIGIN: currentAllowedOrigins[0],
         NODE_ENV: environment,
       },
     });
 
-    /////////////// OLD NEED TO INTEGRATE ////////////////////
     const updateEstimateLambda = new NodejsFunction(this, `updateEstimateLambda-${environment}`, {
       entry: join(__dirname, '../functions', 'updateEstimate.js'),
       runtime: Runtime.NODEJS_16_X,
@@ -132,6 +132,7 @@ export class RapidcleanersApiCdkStack extends cdk.Stack {
       },
       environment: {
         TABLE_NAME: estimatesTable.tableName,
+        ALLOWED_ORIGIN: currentAllowedOrigins[0],
         NODE_ENV: environment,
       },
     });
@@ -145,6 +146,7 @@ export class RapidcleanersApiCdkStack extends cdk.Stack {
       },
       environment: {
         TABLE_NAME: estimatesTable.tableName,
+        ALLOWED_ORIGIN: currentAllowedOrigins[0],
         NODE_ENV: environment, // Ensure this is correct
       },
     });
@@ -175,6 +177,7 @@ export class RapidcleanersApiCdkStack extends cdk.Stack {
       },
       environment: {
         TABLE_NAME: usersTable.tableName,
+        ALLOWED_ORIGIN: currentAllowedOrigins[0],
         NODE_ENV: environment,// Ensure this is correct
       },
     });
@@ -188,6 +191,7 @@ export class RapidcleanersApiCdkStack extends cdk.Stack {
       },
       environment: {
         TABLE_NAME: usersTable.tableName,
+        ALLOWED_ORIGIN: currentAllowedOrigins[0],
         NODE_ENV: environment,// Ensure this is correct
       },
     });
@@ -217,6 +221,7 @@ export class RapidcleanersApiCdkStack extends cdk.Stack {
       },
       environment: {
         TABLE_NAME: locationsTable.tableName,
+        ALLOWED_ORIGIN: currentAllowedOrigins[0],
         NODE_ENV: environment,// Ensure this is correct
       },
     });
@@ -230,6 +235,7 @@ export class RapidcleanersApiCdkStack extends cdk.Stack {
       },
       environment: {
         TABLE_NAME: locationsTable.tableName,
+        ALLOWED_ORIGIN: currentAllowedOrigins[0],
         NODE_ENV: environment,// Ensure this is correct
       },
     });
@@ -243,6 +249,7 @@ export class RapidcleanersApiCdkStack extends cdk.Stack {
       },
       environment: {
         TABLE_NAME: locationsTable.tableName,
+        ALLOWED_ORIGIN: currentAllowedOrigins[0],
         NODE_ENV: environment,// Ensure this is correct
       },
     });
@@ -280,6 +287,7 @@ export class RapidcleanersApiCdkStack extends cdk.Stack {
       },
       environment: {
         TABLE_NAME: bookingsTable.tableName,
+        ALLOWED_ORIGIN: currentAllowedOrigins[0],
         NODE_ENV: environment,// Ensure this is correct
       },
     });
@@ -293,6 +301,7 @@ export class RapidcleanersApiCdkStack extends cdk.Stack {
       },
       environment: {
         TABLE_NAME: bookingsTable.tableName,
+        ALLOWED_ORIGIN: currentAllowedOrigins[0],
         NODE_ENV: environment,// Ensure this is correct
       },
     });
