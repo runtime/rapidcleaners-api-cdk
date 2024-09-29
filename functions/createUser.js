@@ -3,6 +3,7 @@
 var AWS = require("aws-sdk");
 var dynamoDb = new AWS.DynamoDB.DocumentClient();
 var TABLE_NAME = process.env.TABLE_NAME; // Make sure to set this table name in the environment variables
+var ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN; // Read allowed origin from environment variable
 
 exports.handler = async (event) => {
     console.log("[createUser] Received event:", JSON.stringify(event, null, 2));
@@ -17,8 +18,9 @@ exports.handler = async (event) => {
                 statusCode: 400,
                 headers: {
                     "Content-Type": "application/json",
-                    "Access-Control-Allow-Origin": "http://localhost:3000",
-                    "Access-Control-Allow-Methods": "POST,OPTIONS"
+                    "Access-Control-Allow-Methods": "POST,OPTIONS",
+                    "Access-Control-Allow-Origin": ALLOWED_ORIGIN
+
                 },
                 body: JSON.stringify({ message: 'Invalid request: "userId" is required and must be a string.' }),
             };
@@ -29,8 +31,9 @@ exports.handler = async (event) => {
                 statusCode: 400,
                 headers: {
                     "Content-Type": "application/json",
-                    "Access-Control-Allow-Origin": "http://localhost:3000",
-                    "Access-Control-Allow-Methods": "POST,OPTIONS"
+                    "Access-Control-Allow-Methods": "POST,OPTIONS",
+                    "Access-Control-Allow-Origin": ALLOWED_ORIGIN
+
                 },
                 body: JSON.stringify({ message: 'Invalid request: "userDetails" is required and must be an object.' }),
             };
@@ -44,8 +47,10 @@ exports.handler = async (event) => {
                     statusCode: 400,
                     headers: {
                         "Content-Type": "application/json",
-                        "Access-Control-Allow-Origin": "http://localhost:3000",
-                        "Access-Control-Allow-Methods": "POST,OPTIONS"
+                        "Access-Control-Allow-Methods": "POST,OPTIONS",
+                        "Access-Control-Allow-Origin": ALLOWED_ORIGIN
+
+
                     },
                     body: JSON.stringify({ message: `Invalid request: "userDetails.${field}" is required.` }),
                 };
@@ -68,10 +73,10 @@ exports.handler = async (event) => {
 
         // Return a successful response
         return {
-            statusCode: 201,
+            statusCode: 200,
             headers: {
                 "Content-Type": "application/json",
-                "Access-Control-Allow-Origin": "http://localhost:3000",
+                "Access-Control-Allow-Origin": ALLOWED_ORIGIN,
                 "Access-Control-Allow-Methods": "POST,OPTIONS"
             },
             body: JSON.stringify({ message: "User created successfully!", item: params.Item }),
@@ -83,7 +88,7 @@ exports.handler = async (event) => {
             statusCode: 500,
             headers: {
                 "Content-Type": "application/json",
-                "Access-Control-Allow-Origin": "http://localhost:3000",
+                "Access-Control-Allow-Origin": ALLOWED_ORIGIN,
                 "Access-Control-Allow-Methods": "POST,OPTIONS"
             },
             body: JSON.stringify({ message: "Internal Server Error", error: error.message }),

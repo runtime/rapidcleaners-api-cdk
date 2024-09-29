@@ -3,6 +3,8 @@
 var AWS = require("aws-sdk");
 var dynamoDb = new AWS.DynamoDB.DocumentClient();
 var TABLE_NAME = process.env.TABLE_NAME; // Ensure the table name is set in the Lambda environment
+var ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN; // Read allowed origin from environment variable
+
 
 exports.handler = async (event) => {
     console.log("[getOneUser] Received event:", JSON.stringify(event, null, 2));
@@ -16,7 +18,7 @@ exports.handler = async (event) => {
                 statusCode: 400,
                 headers: {
                     "Content-Type": "application/json",
-                    "Access-Control-Allow-Origin": "*",
+                    "Access-Control-Allow-Origin": ALLOWED_ORIGIN,
                     "Access-Control-Allow-Methods": "GET,OPTIONS"
                 },
                 body: JSON.stringify({ message: 'Invalid request: "userId" is required and must be a string.' }),
@@ -38,7 +40,7 @@ exports.handler = async (event) => {
                 statusCode: 404,
                 headers: {
                     "Content-Type": "application/json",
-                    "Access-Control-Allow-Origin": "*",
+                    "Access-Control-Allow-Origin": ALLOWED_ORIGIN,
                     "Access-Control-Allow-Methods": "GET,OPTIONS"
                 },
                 body: JSON.stringify({ message: "User not found." }),
@@ -50,7 +52,7 @@ exports.handler = async (event) => {
             statusCode: 200,
             headers: {
                 "Content-Type": "application/json",
-                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Origin": ALLOWED_ORIGIN,
                 "Access-Control-Allow-Methods": "GET,OPTIONS"
             },
             body: JSON.stringify({ user: data.Item }),
@@ -62,7 +64,7 @@ exports.handler = async (event) => {
             statusCode: 500,
             headers: {
                 "Content-Type": "application/json",
-                "Access-Control-Allow-Origin": "*",
+                "Access-Control-Allow-Origin": ALLOWED_ORIGIN,
                 "Access-Control-Allow-Methods": "GET,OPTIONS"
             },
             body: JSON.stringify({ message: "Internal Server Error", error: error.message }),
