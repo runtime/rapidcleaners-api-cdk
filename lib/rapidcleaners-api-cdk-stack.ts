@@ -275,6 +275,7 @@ export class RapidcleanersApiCdkStack extends cdk.Stack {
       environment: {
         TABLE_NAME: bookingsTable.tableName,
         NODE_ENV: environment,// Ensure this is correct
+        ALLOWED_ORIGIN: currentAllowedOrigins[0],
       },
     });
 
