@@ -5,13 +5,13 @@ var dynamoDb = new AWS.DynamoDB.DocumentClient();
 var TABLE_NAME = process.env.TABLE_NAME; // Ensure the table name for locations is set in the environment variables
 
 exports.handler = async (event) => {
-    console.log("[getOneLocation] Received event:", JSON.stringify(event, null, 2));
+    console.log("[getOneLocationByUserId] Received event:", JSON.stringify(event, null, 2));
 
     try {
-        const locationId = event.pathParameters.locationId; // Assuming the locationId is passed via path parameters
+        const userId = event.pathParameters.userId; // Assuming the userId is passed via path parameters
 
-        // Validate the locationId
-        if (!locationId || typeof locationId !== "string") {
+        // Validate the userId
+        if (!userId || typeof userId !== "string") {
             return {
                 statusCode: 400,
                 headers: {
@@ -19,20 +19,24 @@ exports.handler = async (event) => {
                     "Access-Control-Allow-Origin": "*",
                     "Access-Control-Allow-Methods": "GET,OPTIONS"
                 },
-                body: JSON.stringify({ message: 'Invalid request: "locationId" is required and must be a string.' }),
+                body: JSON.stringify({ message: 'Invalid request: "userId" is required and must be a string.' }),
             };
         }
 
-        // Define the params for the DynamoDB get operation
+        // Define the params for the DynamoDB query operation
         const params = {
             TableName: TABLE_NAME,
-            Key: { locationId: locationId }
+            IndexName: "userId-index", // Make sure you have a Global Secondary Index (GSI) on userId if it's not the primary key
+            KeyConditionExpression: "userId = :userId",
+            ExpressionAttributeValues: {
+                ":userId": userId
+            }
         };
 
-        // Perform the get operation from DynamoDB
-        const data = await dynamoDb.get(params).promise();
+        // Perform the query operation from DynamoDB
+        const data = await dynamoDb.query(params).promise();
 
-        if (!data.Item) {
+        if (data.Items.length === 0) {
             return {
                 statusCode: 404,
                 headers: {
@@ -44,7 +48,7 @@ exports.handler = async (event) => {
             };
         }
 
-        // Return the found location
+        // Return the found location(s)
         return {
             statusCode: 200,
             headers: {
@@ -52,7 +56,7 @@ exports.handler = async (event) => {
                 "Access-Control-Allow-Origin": "*",
                 "Access-Control-Allow-Methods": "GET,OPTIONS"
             },
-            body: JSON.stringify({ location: data.Item }),
+            body: JSON.stringify({ locations: data.Items }),
         };
 
     } catch (error) {

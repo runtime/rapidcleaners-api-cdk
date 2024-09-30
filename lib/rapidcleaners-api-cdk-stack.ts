@@ -35,6 +35,13 @@ export class RapidcleanersApiCdkStack extends cdk.Stack {
       removalPolicy: RemovalPolicy.DESTROY,
     });
 
+    // GSI for Locations Table
+    locationsTable.addGlobalSecondaryIndex({
+      indexName: 'userId-index', // Name of the GSI
+      partitionKey: { name: 'userId', type: dynamodb.AttributeType.STRING },
+      projectionType: dynamodb.ProjectionType.ALL, // You can use KEYS_ONLY, INCLUDE, or ALL depending on your needs
+    });
+
     // S3 Buckets
     const rcDataBucket = new s3.Bucket(this, 'rc-data-s3', {
       removalPolicy: RemovalPolicy.DESTROY,
@@ -114,7 +121,14 @@ export class RapidcleanersApiCdkStack extends cdk.Stack {
 
     const updateEstimateLambda = new NodejsFunction(this, 'updateEstimateLambda', {
       entry: join(__dirname, '../functions', 'updateEstimate.js'),
-      ...nodejsFunctionProps,
+      runtime: Runtime.NODEJS_16_X,
+      handler: 'handler',
+      bundling: {
+        externalModules: ['aws-sdk'],
+      },
+      environment: {
+        TABLE_NAME: estimatesTable.tableName, // Ensure this is correct
+      },
     });
 
     const deleteEstimateLambda = new NodejsFunction(this, 'deleteEstimateLambda', {
@@ -130,12 +144,26 @@ export class RapidcleanersApiCdkStack extends cdk.Stack {
 
     const getOneUserLambda = new NodejsFunction(this, 'getOneUserLambda', {
       entry: join(__dirname, '../functions', 'getOneUser.js'),
-      ...nodejsFunctionProps,
+      runtime: Runtime.NODEJS_16_X,
+      handler: 'handler',
+      bundling: {
+        externalModules: ['aws-sdk'],
+      },
+      environment: {
+        TABLE_NAME: usersTable.tableName, // Ensure this is correct
+      },
     });
 
     const createUserLambda = new NodejsFunction(this, 'createUserLambda', {
       entry: join(__dirname, '../functions', 'createUser.js'),
-      ...nodejsFunctionProps,
+      runtime: Runtime.NODEJS_16_X,
+      handler: 'handler',
+      bundling: {
+        externalModules: ['aws-sdk'],
+      },
+      environment: {
+        TABLE_NAME: usersTable.tableName, // Ensure this is correct
+      },
     });
 
     const updateUserLambda = new NodejsFunction(this, 'updateUserLambda', {
@@ -156,13 +184,40 @@ export class RapidcleanersApiCdkStack extends cdk.Stack {
 
     const getOneLocationLambda = new NodejsFunction(this, 'getOneLocationLambda', {
       entry: join(__dirname, '../functions', 'getOneLocation.js'),
-      ...nodejsFunctionProps,
+      runtime: Runtime.NODEJS_16_X,
+      handler: 'handler',
+      bundling: {
+        externalModules: ['aws-sdk'],
+      },
+      environment: {
+        TABLE_NAME: locationsTable.tableName, // Ensure this is correct
+      },
+    });
+
+    const getOneLocationByUserId = new NodejsFunction(this, 'getOneLocationByUserIdLambda', {
+      entry: join(__dirname, '../functions', 'getOneLocationByUserId.js'),
+      runtime: Runtime.NODEJS_16_X,
+      handler: 'handler',
+      bundling: {
+        externalModules: ['aws-sdk'],
+      },
+      environment: {
+        TABLE_NAME: locationsTable.tableName, // Ensure this is correct
+      },
     });
 
     const createLocationLambda = new NodejsFunction(this, 'createLocationLambda', {
       entry: join(__dirname, '../functions', 'createLocation.js'),
-      ...nodejsFunctionProps,
+      runtime: Runtime.NODEJS_16_X,
+      handler: 'handler',
+      bundling: {
+        externalModules: ['aws-sdk'],
+      },
+      environment: {
+        TABLE_NAME: locationsTable.tableName, // Ensure this is correct
+      },
     });
+
 
     const updateLocationLambda = new NodejsFunction(this, 'updateLocationLambda', {
       entry: join(__dirname, '../functions', 'updateLocation.js'),
@@ -189,6 +244,7 @@ export class RapidcleanersApiCdkStack extends cdk.Stack {
 
     locationsTable.grantReadWriteData(getAllLocationsLambda);
     locationsTable.grantReadWriteData(getOneLocationLambda);
+    locationsTable.grantReadWriteData(getOneLocationByUserId);
     locationsTable.grantReadWriteData(createLocationLambda);
     locationsTable.grantReadWriteData(updateLocationLambda);
     locationsTable.grantReadWriteData(deleteLocationLambda);
@@ -243,17 +299,10 @@ export class RapidcleanersApiCdkStack extends cdk.Stack {
     singleLocation.addMethod('DELETE', new api.LambdaIntegration(deleteLocationLambda));
     addCorsOptions(singleLocation);
 
-    // const proxy = estimates.addProxy({
-    //   anyMethod: true,
-    //   defaultMethodOptions: {
-    //     authorizationType: api.AuthorizationType.NONE,
-    //     requestParameters: {
-    //       'method.request.path.proxy': true
-    //     }
-    //   }
-    // })
-    //
-    // addCorsOptions(proxy);
+    const locationByUser = locations.addResource('user').addResource('{userId}');
+    locationByUser.addMethod('GET', new api.LambdaIntegration(getOneLocationByUserId)); // Get one location by userId
+    addCorsOptions(locationByUser);
+
 
     // Output API Gateway URL
     new cdk.CfnOutput(this, 'HTTP API Url', {
@@ -269,9 +318,9 @@ export function addCorsOptions(apiResource: IResource) {
       statusCode: '200',
       responseParameters: {
         'method.response.header.Access-Control-Allow-Headers': "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'",
-        'method.response.header.Access-Control-Allow-Methods': "'GET,POST,OPTIONS'",
+        'method.response.header.Access-Control-Allow-Methods': "'GET,POST,PUT,OPTIONS'",
         'method.response.header.Access-Control-Allow-Origin': "'http://localhost:3000'",  // No trailing slash
-        'method.response.header.Access-Control-Max-Age': "'0'", // Disable CORS caching for testing
+        'method.response.header.Access-Control-Max-Age': "'600'", // Disable CORS caching for testing
       },
     }],
     passthroughBehavior: PassthroughBehavior.WHEN_NO_MATCH,
