@@ -344,7 +344,7 @@ export class RapidcleanersApiCdkStack extends cdk.Stack {
 
     // Add CORS Options and Lambda integrations to the API resources
     const bookings = rapidcleanAPI.root.addResource('bookings');
-    bookings.addMethod('POST', new api.LambdaIntegration(createEstimateLambda));
+    bookings.addMethod('POST', new api.LambdaIntegration(createBookingLambda));
     addCorsOptions(bookings, currentAllowedOrigins);
 
     const estimates = rapidcleanAPI.root.addResource('estimates');
