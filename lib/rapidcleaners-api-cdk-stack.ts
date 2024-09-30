@@ -7,8 +7,6 @@ import { Runtime } from 'aws-cdk-lib/aws-lambda';
 import { App, Stack, RemovalPolicy } from 'aws-cdk-lib';
 import { NodejsFunction, NodejsFunctionProps } from 'aws-cdk-lib/aws-lambda-nodejs';
 import * as s3 from 'aws-cdk-lib/aws-s3';
-import * as cloudwatch from 'aws-cdk-lib/aws-cloudwatch';
-//import { LogGroup, RetentionDays } from 'aws-cdk-lib/aws-cloudwatch';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import { join } from 'path';
 
@@ -16,59 +14,77 @@ export class RapidcleanersApiCdkStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
+    // Define the environment - can be 'dev', 'stage', or 'prod'
+    let environment = 'stage'; // Adjust this manually as needed
+    console.log('RapidEnvironment:', environment)
+
+    // Correct structure for allowedOrigins
+    const allowedOriginsMap: { [key: string]: string[] } = {
+      dev: ['http://localhost:3000'],
+      stage: ['http://rapidcleanstage.s3-website-us-east-1.amazonaws.com'],
+      prod: ['http://rapidcleanprod.s3-website-us-east-1.amazonaws.com'],
+    };
+
+    // Get allowed origins based on the environment
+    const currentAllowedOrigins = allowedOriginsMap[environment] || ['*'];
+
+    // Use RemovalPolicy.RETAIN for production and DESTROY for other environments
+    const removalPolicy =
+        environment === 'prod' ? RemovalPolicy.RETAIN : RemovalPolicy.DESTROY;
+
+
     // DynamoDB Tables
-    const estimatesTable = new dynamodb.Table(this, 'EstimatesTable', {
+    const estimatesTable = new dynamodb.Table(this, `EstimatesTable-${environment}`, {
       partitionKey: { name: 'estimateId', type: dynamodb.AttributeType.STRING },
-      tableName: 'rc-estimates',
-      removalPolicy: RemovalPolicy.DESTROY,
+      tableName: `rc-estimates-${environment}`,
+      removalPolicy: removalPolicy,
     });
 
-    const usersTable = new dynamodb.Table(this, 'UsersTable', {
+    const usersTable = new dynamodb.Table(this, `UsersTable-${environment}`, {
       partitionKey: { name: 'userId', type: dynamodb.AttributeType.STRING },
-      tableName: 'rc-users',
-      removalPolicy: RemovalPolicy.DESTROY,
+      tableName: `rc-users-${environment}`,
+      removalPolicy: removalPolicy,
     });
 
-    const locationsTable = new dynamodb.Table(this, 'LocationsTable', {
+    const locationsTable = new dynamodb.Table(this, `LocationsTable-${environment}}`, {
       partitionKey: { name: 'locationId', type: dynamodb.AttributeType.STRING },
-      tableName: 'rc-locations',
-      removalPolicy: RemovalPolicy.DESTROY,
+      tableName: `rc-locations-${environment}`,
+      removalPolicy: removalPolicy,
     });
 
     // GSI for Locations Table
     locationsTable.addGlobalSecondaryIndex({
-      indexName: 'userId-index', // Name of the GSI
+      indexName: 'userId-index',
       partitionKey: { name: 'userId', type: dynamodb.AttributeType.STRING },
-      projectionType: dynamodb.ProjectionType.ALL, // You can use KEYS_ONLY, INCLUDE, or ALL depending on your needs
+      projectionType: dynamodb.ProjectionType.ALL,
     });
 
-    const bookingsTable = new dynamodb.Table(this, 'RcBookingsTable', {
+    const bookingsTable = new dynamodb.Table(this, `RcBookingsTable-${environment}`, {
       partitionKey: { name: 'bookingId', type: dynamodb.AttributeType.STRING },
-      tableName: 'rc-bookings',
-      removalPolicy: RemovalPolicy.DESTROY // Change for production
+      tableName: `rc-bookings-${environment}`,
+      removalPolicy: removalPolicy,
     });
-
 
     // S3 Buckets
-    const rcDataBucket = new s3.Bucket(this, 'rc-data-s3', {
+    const rcDataBucket = new s3.Bucket(this, `rc-data-s3-${environment}`, {
       removalPolicy: RemovalPolicy.DESTROY,
       autoDeleteObjects: true,
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
     });
 
-    const rcMediaBucket = new s3.Bucket(this, 'rc-media-s3', {
+    const rcMediaBucket = new s3.Bucket(this, `rc-media-s3-${environment}`, {
       removalPolicy: RemovalPolicy.DESTROY,
       autoDeleteObjects: true,
       cors: [
         {
-          allowedOrigins: ['*'],
+          allowedOrigins: currentAllowedOrigins, // Use the current environment's allowed origins
           allowedMethods: [s3.HttpMethods.GET, s3.HttpMethods.PUT],
           allowedHeaders: ['*'],
         },
       ],
     });
 
-    // DynamoDB Backup to S3 Permissions
+    // Backup role and permissions
     const dynamoBackupRole = new iam.Role(this, 'DynamoBackupRole', {
       assumedBy: new iam.ServicePrincipal('dynamodb.amazonaws.com'),
     });
@@ -92,9 +108,8 @@ export class RapidcleanersApiCdkStack extends cdk.Stack {
       runtime: Runtime.NODEJS_16_X,
     };
 
-    // Lambda Functions for CRUD Operations on Estimates
-
-    const createEstimateLambda = new NodejsFunction(this, 'createEstimateLambda', {
+    // Lambda for Estimates
+    const createEstimateLambda = new NodejsFunction(this, `createEstimateLambda-${environment}`, {
       entry: join(__dirname, '../functions', 'createEstimate.js'),
       runtime: Runtime.NODEJS_16_X,
       handler: 'handler',
@@ -102,12 +117,13 @@ export class RapidcleanersApiCdkStack extends cdk.Stack {
         externalModules: ['aws-sdk'],
       },
       environment: {
-        TABLE_NAME: estimatesTable.tableName, // Ensure this is correct
+        TABLE_NAME: estimatesTable.tableName,
+        ALLOWED_ORIGIN: currentAllowedOrigins[0],
+        NODE_ENV: environment,
       },
     });
 
-
-    const updateEstimateLambda = new NodejsFunction(this, 'updateEstimateLambda', {
+    const updateEstimateLambda = new NodejsFunction(this, `updateEstimateLambda-${environment}`, {
       entry: join(__dirname, '../functions', 'updateEstimate.js'),
       runtime: Runtime.NODEJS_16_X,
       handler: 'handler',
@@ -115,11 +131,13 @@ export class RapidcleanersApiCdkStack extends cdk.Stack {
         externalModules: ['aws-sdk'],
       },
       environment: {
-        TABLE_NAME: estimatesTable.tableName, // Ensure this is correct
+        TABLE_NAME: estimatesTable.tableName,
+        ALLOWED_ORIGIN: currentAllowedOrigins[0],
+        NODE_ENV: environment,
       },
     });
 
-    const getAllEstimatesLambda = new NodejsFunction(this, 'getAllEstimatesLambda', {
+    const getAllEstimatesLambda = new NodejsFunction(this, `getAllEstimatesLambda-${environment}`, {
       entry: join(__dirname, '../functions', 'getAllEstimates.js'),
       runtime: Runtime.NODEJS_16_X,
       handler: 'handler',
@@ -127,28 +145,30 @@ export class RapidcleanersApiCdkStack extends cdk.Stack {
         externalModules: ['aws-sdk'],
       },
       environment: {
-        TABLE_NAME: estimatesTable.tableName, // Ensure this is correct
+        TABLE_NAME: estimatesTable.tableName,
+        ALLOWED_ORIGIN: currentAllowedOrigins[0],
+        NODE_ENV: environment, // Ensure this is correct
       },
     });
 
-    const getOneEstimateLambda = new NodejsFunction(this, 'getOneEstimateLambda', {
+    const getOneEstimateLambda = new NodejsFunction(this, `getOneEstimateLambda-${environment}`, {
       entry: join(__dirname, '../functions', 'getOneEstimate.js'),
       ...nodejsFunctionProps,
     });
 
 
-    const deleteEstimateLambda = new NodejsFunction(this, 'deleteEstimateLambda', {
+    const deleteEstimateLambda = new NodejsFunction(this, `deleteEstimateLambda-${environment}`, {
       entry: join(__dirname, '../functions', 'deleteEstimate.js'),
       ...nodejsFunctionProps,
     });
 
     // Lambda Functions for CRUD Operations on Users
-    const getAllUsersLambda = new NodejsFunction(this, 'getAllUsersLambda', {
+    const getAllUsersLambda = new NodejsFunction(this, `getAllUsersLambda-${environment}`, {
       entry: join(__dirname, '../functions', 'getAllUsers.js'),
       ...nodejsFunctionProps,
     });
 
-    const getOneUserLambda = new NodejsFunction(this, 'getOneUserLambda', {
+    const getOneUserLambda = new NodejsFunction(this, `getOneUserLambda-${environment}`, {
       entry: join(__dirname, '../functions', 'getOneUser.js'),
       runtime: Runtime.NODEJS_16_X,
       handler: 'handler',
@@ -156,11 +176,13 @@ export class RapidcleanersApiCdkStack extends cdk.Stack {
         externalModules: ['aws-sdk'],
       },
       environment: {
-        TABLE_NAME: usersTable.tableName, // Ensure this is correct
+        TABLE_NAME: usersTable.tableName,
+        ALLOWED_ORIGIN: currentAllowedOrigins[0],
+        NODE_ENV: environment,// Ensure this is correct
       },
     });
 
-    const createUserLambda = new NodejsFunction(this, 'createUserLambda', {
+    const createUserLambda = new NodejsFunction(this, `createUserLambda-${environment}`, {
       entry: join(__dirname, '../functions', 'createUser.js'),
       runtime: Runtime.NODEJS_16_X,
       handler: 'handler',
@@ -168,27 +190,29 @@ export class RapidcleanersApiCdkStack extends cdk.Stack {
         externalModules: ['aws-sdk'],
       },
       environment: {
-        TABLE_NAME: usersTable.tableName, // Ensure this is correct
+        TABLE_NAME: usersTable.tableName,
+        ALLOWED_ORIGIN: currentAllowedOrigins[0],
+        NODE_ENV: environment,// Ensure this is correct
       },
     });
 
-    const updateUserLambda = new NodejsFunction(this, 'updateUserLambda', {
+    const updateUserLambda = new NodejsFunction(this, `updateUserLambda-${environment}`, {
       entry: join(__dirname, '../functions', 'updateUser.js'),
       ...nodejsFunctionProps,
     });
 
-    const deleteUserLambda = new NodejsFunction(this, 'deleteUserLambda', {
+    const deleteUserLambda = new NodejsFunction(this, `deleteUserLambda-${environment}`, {
       entry: join(__dirname, '../functions', 'deleteUser.js'),
       ...nodejsFunctionProps,
     });
 
     // Lambda Functions for CRUD Operations on Locations
-    const getAllLocationsLambda = new NodejsFunction(this, 'getAllLocationsLambda', {
+    const getAllLocationsLambda = new NodejsFunction(this, `getAllLocationsLambda-${environment}`, {
       entry: join(__dirname, '../functions', 'getAllLocations.js'),
       ...nodejsFunctionProps,
     });
 
-    const getOneLocationLambda = new NodejsFunction(this, 'getOneLocationLambda', {
+    const getOneLocationLambda = new NodejsFunction(this, `getOneLocationLambda-${environment}`, {
       entry: join(__dirname, '../functions', 'getOneLocation.js'),
       runtime: Runtime.NODEJS_16_X,
       handler: 'handler',
@@ -196,11 +220,13 @@ export class RapidcleanersApiCdkStack extends cdk.Stack {
         externalModules: ['aws-sdk'],
       },
       environment: {
-        TABLE_NAME: locationsTable.tableName, // Ensure this is correct
+        TABLE_NAME: locationsTable.tableName,
+        ALLOWED_ORIGIN: currentAllowedOrigins[0],
+        NODE_ENV: environment,// Ensure this is correct
       },
     });
 
-    const getOneLocationByUserId = new NodejsFunction(this, 'getOneLocationByUserIdLambda', {
+    const getOneLocationByUserId = new NodejsFunction(this, `getOneLocationByUserIdLambda-${environment}`, {
       entry: join(__dirname, '../functions', 'getOneLocationByUserId.js'),
       runtime: Runtime.NODEJS_16_X,
       handler: 'handler',
@@ -208,11 +234,13 @@ export class RapidcleanersApiCdkStack extends cdk.Stack {
         externalModules: ['aws-sdk'],
       },
       environment: {
-        TABLE_NAME: locationsTable.tableName, // Ensure this is correct
+        TABLE_NAME: locationsTable.tableName,
+        ALLOWED_ORIGIN: currentAllowedOrigins[0],
+        NODE_ENV: environment,// Ensure this is correct
       },
     });
 
-    const createLocationLambda = new NodejsFunction(this, 'createLocationLambda', {
+    const createLocationLambda = new NodejsFunction(this, `createLocationLambda-${environment}`, {
       entry: join(__dirname, '../functions', 'createLocation.js'),
       runtime: Runtime.NODEJS_16_X,
       handler: 'handler',
@@ -220,22 +248,24 @@ export class RapidcleanersApiCdkStack extends cdk.Stack {
         externalModules: ['aws-sdk'],
       },
       environment: {
-        TABLE_NAME: locationsTable.tableName, // Ensure this is correct
+        TABLE_NAME: locationsTable.tableName,
+        ALLOWED_ORIGIN: currentAllowedOrigins[0],
+        NODE_ENV: environment,// Ensure this is correct
       },
     });
 
 
-    const updateLocationLambda = new NodejsFunction(this, 'updateLocationLambda', {
+    const updateLocationLambda = new NodejsFunction(this, `updateLocationLambda-${environment}`, {
       entry: join(__dirname, '../functions', 'updateLocation.js'),
       ...nodejsFunctionProps,
     });
 
-    const deleteLocationLambda = new NodejsFunction(this, 'deleteLocationLambda', {
+    const deleteLocationLambda = new NodejsFunction(this, `deleteLocationLambda-${environment}`, {
       entry: join(__dirname, '../functions', 'deleteLocation.js'),
       ...nodejsFunctionProps,
     });
 
-    const createBookingLambda = new NodejsFunction(this, 'createBookingLambda', {
+    const createBookingLambda = new NodejsFunction(this, `createBookingLambda-${environment}`, {
       entry: join(__dirname, '../functions', 'createBooking.js'),
       runtime: Runtime.NODEJS_16_X,
       handler: 'handler',
@@ -243,11 +273,13 @@ export class RapidcleanersApiCdkStack extends cdk.Stack {
         externalModules: ['aws-sdk'],
       },
       environment: {
-        TABLE_NAME: bookingsTable.tableName, // Ensure this is correct
+        TABLE_NAME: bookingsTable.tableName,
+        NODE_ENV: environment,// Ensure this is correct
+        ALLOWED_ORIGIN: currentAllowedOrigins[0],
       },
     });
 
-    const getAllBookingsLambda = new NodejsFunction(this, 'getAllBookingsLambda', {
+    const getAllBookingsLambda = new NodejsFunction(this, `getAllBookingsLambda-${environment}`, {
       entry: join(__dirname, '../functions', 'getAllBookings.js'),
       runtime: Runtime.NODEJS_16_X,
       handler: 'handler',
@@ -255,11 +287,13 @@ export class RapidcleanersApiCdkStack extends cdk.Stack {
         externalModules: ['aws-sdk'],
       },
       environment: {
-        TABLE_NAME: bookingsTable.tableName, // Ensure this is correct
+        TABLE_NAME: bookingsTable.tableName,
+        ALLOWED_ORIGIN: currentAllowedOrigins[0],
+        NODE_ENV: environment,// Ensure this is correct
       },
     });
 
-    const updateBookingLambda = new NodejsFunction(this, 'updateBookingLambda', {
+    const updateBookingLambda = new NodejsFunction(this, `updateBookingLambda-${environment}`, {
       entry: join(__dirname, '../functions', 'updateBooking.js'),
       runtime: Runtime.NODEJS_16_X,
       handler: 'handler',
@@ -267,11 +301,11 @@ export class RapidcleanersApiCdkStack extends cdk.Stack {
         externalModules: ['aws-sdk'],
       },
       environment: {
-        TABLE_NAME: bookingsTable.tableName, // Ensure this is correct
+        TABLE_NAME: bookingsTable.tableName,
+        ALLOWED_ORIGIN: currentAllowedOrigins[0],
+        NODE_ENV: environment,// Ensure this is correct
       },
     });
-
-
 
     // Grant DynamoDB permissions to Lambda functions
     estimatesTable.grantReadWriteData(getAllEstimatesLambda);
@@ -297,68 +331,62 @@ export class RapidcleanersApiCdkStack extends cdk.Stack {
     //bookingsTable.grantReadWriteData(updateBookingLambda);
     //bookingsTable.grantReadWriteData(getAllBookingsLambda);
 
+
     // API Gateway Setup
-    const rapidcleanAPI = new api.RestApi(this, 'RapidCleanAPI', {
-      restApiName: 'rc-service',
+    const rapidcleanAPI = new api.RestApi(this, `RapidCleanAPI-${environment}`, {
+      restApiName: `rc-service-${environment}`,
       description: 'AWS API Gateway with Lambda Proxy integration',
-      deployOptions: { stageName: 'prod' },
+      deployOptions: { stageName: environment }, // Adjust this based on environment
     });
 
-
     // added this from experience
-    addCorsOptions(rapidcleanAPI.root);
+    addCorsOptions(rapidcleanAPI.root, currentAllowedOrigins);
 
-    // cal.com callback that sends the booking id. we create a booking
-    // const calcomWebhook = rapidcleanAPI.root.addResource('calcom-webhook');
-    // calcomWebhook.addMethod('POST', new api.LambdaIntegration(createBookingLambda));
-
+    // Add CORS Options and Lambda integrations to the API resources
     const bookings = rapidcleanAPI.root.addResource('bookings');
     bookings.addMethod('POST', new api.LambdaIntegration(createBookingLambda));
-    //bookings.addMethod('GET', new api.LambdaIntegration(getAllBookingsLambda));
-    addCorsOptions(bookings);
+    addCorsOptions(bookings, currentAllowedOrigins);
 
-
-
-    // API Gateway Resources and Methods for Estimates
     const estimates = rapidcleanAPI.root.addResource('estimates');
     estimates.addMethod('POST', new api.LambdaIntegration(createEstimateLambda));
-    estimates.addMethod('GET', new api.LambdaIntegration(getAllEstimatesLambda));
-    addCorsOptions(estimates);
+    //bookings.addMethod('GET', new api.LambdaIntegration(getAllBookingsLambda));
+    addCorsOptions(estimates, currentAllowedOrigins);
 
 
     const singleEstimate = estimates.addResource('{estimateId}');
     singleEstimate.addMethod('GET', new api.LambdaIntegration(getOneEstimateLambda));
     singleEstimate.addMethod('PUT', new api.LambdaIntegration(updateEstimateLambda));
     singleEstimate.addMethod('DELETE', new api.LambdaIntegration(deleteEstimateLambda));
-    addCorsOptions(singleEstimate);
+    addCorsOptions(singleEstimate, currentAllowedOrigins);
 
     // API Gateway Resources and Methods for Users
     const users = rapidcleanAPI.root.addResource('users');
     users.addMethod('GET', new api.LambdaIntegration(getAllUsersLambda));
     users.addMethod('POST', new api.LambdaIntegration(createUserLambda));
-    addCorsOptions(users);
+    addCorsOptions(users, currentAllowedOrigins);
 
     const singleUser = users.addResource('{userId}');
     singleUser.addMethod('GET', new api.LambdaIntegration(getOneUserLambda));
     singleUser.addMethod('PUT', new api.LambdaIntegration(updateUserLambda));
     singleUser.addMethod('DELETE', new api.LambdaIntegration(deleteUserLambda));
-    addCorsOptions(singleUser);
+    addCorsOptions(singleUser, currentAllowedOrigins);
 
     // API Gateway Resources and Methods for Locations
     const locations = rapidcleanAPI.root.addResource('locations');
     locations.addMethod('GET', new api.LambdaIntegration(getAllLocationsLambda));
     locations.addMethod('POST', new api.LambdaIntegration(createLocationLambda));
-    addCorsOptions(locations);
+    addCorsOptions(locations, currentAllowedOrigins);
 
     const singleLocation = locations.addResource('{locationId}');
     singleLocation.addMethod('GET', new api.LambdaIntegration(getOneLocationLambda));
     singleLocation.addMethod('PUT', new api.LambdaIntegration(updateLocationLambda));
     singleLocation.addMethod('DELETE', new api.LambdaIntegration(deleteLocationLambda));
-    addCorsOptions(singleLocation);
+    addCorsOptions(singleLocation, currentAllowedOrigins);
 
     const locationByUser = locations.addResource('user').addResource('{userId}');
     locationByUser.addMethod('GET', new api.LambdaIntegration(getOneLocationByUserId)); // Get one location by userId
-    addCorsOptions(locationByUser);
+    addCorsOptions(locationByUser, currentAllowedOrigins);
+
 
 
     // Output API Gateway URL
@@ -369,14 +397,16 @@ export class RapidcleanersApiCdkStack extends cdk.Stack {
 }
 
 // CORS configuration function
-export function addCorsOptions(apiResource: IResource) {
+export function addCorsOptions(apiResource: IResource, allowedOrigins: string[]) {
+  const origin = allowedOrigins.join(', '); // Join allowed origins into a string
+
   apiResource.addMethod('OPTIONS', new MockIntegration({
     integrationResponses: [{
       statusCode: '200',
       responseParameters: {
         'method.response.header.Access-Control-Allow-Headers': "'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token,X-Amz-User-Agent'",
         'method.response.header.Access-Control-Allow-Methods': "'GET,POST,PUT,OPTIONS'",
-        'method.response.header.Access-Control-Allow-Origin': "'http://localhost:3000'",  // No trailing slash
+        'method.response.header.Access-Control-Allow-Origin': `'${origin}'`,  // Properly wrap in quotes
         'method.response.header.Access-Control-Max-Age': "'600'", // Disable CORS caching for testing
       },
     }],
@@ -391,7 +421,7 @@ export function addCorsOptions(apiResource: IResource) {
         'method.response.header.Access-Control-Allow-Headers': true,
         'method.response.header.Access-Control-Allow-Methods': true,
         'method.response.header.Access-Control-Allow-Origin': true,
-        'method.response.header.Access-Control-Max-Age': true, // Ensure this is included in the response
+        'method.response.header.Access-Control-Max-Age': true,
       },
     }],
   });

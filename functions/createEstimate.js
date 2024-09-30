@@ -1,7 +1,8 @@
 "use strict";
 var AWS = require("aws-sdk");
 var dynamoDb = new AWS.DynamoDB.DocumentClient();
-var TABLE_NAME = 'rc-estimates';
+var TABLE_NAME = process.env.TABLE_NAME; // Read the table name from environment variable
+var ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN; // Read allowed origin from environment variable
 
 exports.handler = async (event) => {
     try {
@@ -15,7 +16,7 @@ exports.handler = async (event) => {
                 headers: {
                     'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token',
                     'Access-Control-Allow-Methods': 'POST,OPTIONS',
-                    'Access-Control-Allow-Origin': 'http://localhost:3000',
+                    'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
                 },
                 body: JSON.stringify({ message: 'Invalid request: "estimateId" is required and must be a string.' })
             };
@@ -30,7 +31,7 @@ exports.handler = async (event) => {
                     // "Access-Control-Allow-Methods": "POST,OPTIONS",
                     'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token',
                     'Access-Control-Allow-Methods': 'POST,OPTIONS',
-                    'Access-Control-Allow-Origin': 'http://localhost:3000',
+                    'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
                 },
                 body: JSON.stringify({ message: 'Invalid request: "servicedetails" is required and must be an object.' })
             };
@@ -56,7 +57,7 @@ exports.handler = async (event) => {
                     headers: {
                         'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token',
                         'Access-Control-Allow-Methods': 'POST,OPTIONS',
-                        'Access-Control-Allow-Origin': 'http://localhost:3000',
+                        'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
                     },
                     body: JSON.stringify({ message: `Invalid request: "servicedetails.${field}" is required.` })
                 };
@@ -84,7 +85,7 @@ exports.handler = async (event) => {
             headers: {
                 'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token',
                 'Access-Control-Allow-Methods': 'POST,OPTIONS',
-                'Access-Control-Allow-Origin': 'http://localhost:3000',
+                'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
             },
             body: JSON.stringify({ message: "Estimate created successfully!", item: params.Item })
         };
@@ -100,7 +101,7 @@ exports.handler = async (event) => {
             headers: {
                 'Access-Control-Allow-Headers': 'Content-Type,X-Amz-Date,Authorization,X-Api-Key,X-Amz-Security-Token',
                 'Access-Control-Allow-Methods': 'POST,OPTIONS',
-                'Access-Control-Allow-Origin': 'http://localhost:3000',
+                'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
             },
             body: JSON.stringify({ message: "Internal Server Error", error: error.message })
         };
