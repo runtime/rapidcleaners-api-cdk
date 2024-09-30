@@ -22,20 +22,20 @@ exports.handler = async (event) => {
                 body: JSON.stringify({ message: 'Invalid request: "bookingId" and "bookingDetails" are required.' }),
             };
         }
-        const bookingId = body.bookingId;
-        const bookingDetails = body.bookingDetails;
-        // const estimateId = body.bookingDetails.estimateId;
-        // const locationId = body.bookingDetails.locationId;
-        // const userId = body.bookingDetails.userId;
-        // const name = body.bookingDetails.name || "unknown";
-        // const email = body.bookingDetails.email || "unknown";
-        // const phone = body.bookingDetails.phone || "unknown";
-        // const location = body.bookingDetails.location || "unknown address";
-        // const start = body.bookingDetails.start;
-        // const end = body.bookingDetails.end;
-        // const duration = body.bookingDetails.duration || 0;
-        // const status = body.status || "pending";
-        // const eventTitle = body.bookingDetails.eventTitle || "N/A";
+        const bookingId = requestBody.bookingId;
+        const bookingDetails = requestBody.bookingDetails;
+        // const estimateId = requestBody.bookingDetails.estimateId;
+        // const locationId = requestBody.bookingDetails.locationId;
+        // const userId = requestBody.bookingDetails.userId;
+        // const name = requestBody.bookingDetails.name || "unknown";
+        // const email = requestBody.bookingDetails.email || "unknown";
+        // const phone = requestBody.bookingDetails.phone || "unknown";
+        // const location = requestBody.bookingDetails.location || "unknown address";
+        // const start = requestBody.bookingDetails.start;
+        // const end = requestBody.bookingDetails.end;
+        // const duration = requestBody.bookingDetails.duration || 0;
+        // const status = requestBody.status || "pending";
+        // const eventTitle = requestBody.bookingDetails.eventTitle || "N/A";
 
 
         const params = {
