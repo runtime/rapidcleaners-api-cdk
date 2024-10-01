@@ -24,7 +24,7 @@ exports.handler = async (event) => {
             };
         }
 
-        const locationId = requestBody.locationdetails.locationId;
+        const locationId = requestBody.locationId;
         if (!locationId || typeof locationId !== "string") {
             return {
                 statusCode: 400,
