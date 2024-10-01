@@ -5,6 +5,8 @@
 var AWS = require("aws-sdk");
 var dynamoDb = new AWS.DynamoDB.DocumentClient();
 var TABLE_NAME = process.env.TABLE_NAME;
+var ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN; // Read allowed origin from environment variable
+
 
 exports.handler = async (event) => {
     console.log("[updateEstimate] Received event:", JSON.stringify(event, null, 2));
@@ -19,7 +21,7 @@ exports.handler = async (event) => {
                 statusCode: 400,
                 headers: {
                     "Content-Type": "application/json",
-                    "Access-Control-Allow-Origin": "http://localhost:3000",
+                    "Access-Control-Allow-Origin": ALLOWED_ORIGIN,
                     "Access-Control-Allow-Methods": "PUT,OPTIONS"
                 },
                 body: JSON.stringify({ message: 'Invalid request: "estimateId" is required and must be a string.' }),
@@ -31,7 +33,7 @@ exports.handler = async (event) => {
                 statusCode: 400,
                 headers: {
                     "Content-Type": "application/json",
-                    "Access-Control-Allow-Origin": "http://localhost:3000",
+                    "Access-Control-Allow-Origin": ALLOWED_ORIGIN,
                     "Access-Control-Allow-Methods": "PUT,OPTIONS"
                 },
                 body: JSON.stringify({ message: 'Invalid request: "servicedetails" is required and must be an object.' }),
@@ -60,7 +62,7 @@ exports.handler = async (event) => {
             statusCode: 200,
             headers: {
                 "Content-Type": "application/json",
-                "Access-Control-Allow-Origin": "http://localhost:3000",
+                "Access-Control-Allow-Origin": ALLOWED_ORIGIN,
                 "Access-Control-Allow-Methods": "PUT,OPTIONS"
             },
             body: JSON.stringify({
@@ -78,7 +80,7 @@ exports.handler = async (event) => {
             statusCode: 500,
             headers: {
                 "Content-Type": "application/json",
-                "Access-Control-Allow-Origin": "http://localhost:3000",
+                "Access-Control-Allow-Origin": ALLOWED_ORIGIN,
                 "Access-Control-Allow-Methods": "PUT,OPTIONS"
             },
             body: JSON.stringify({ message: "Internal Server Error", error: error.message }),

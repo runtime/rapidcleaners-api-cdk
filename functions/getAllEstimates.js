@@ -3,6 +3,8 @@ const dynamoDb = new AWS.DynamoDB.DocumentClient();
 
 // Environment variable for the table name
 const TABLE_NAME = process.env.TABLE_NAME;
+var ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN; // Read allowed origin from environment variable
+
 
 exports.handler = async (event) => {
     try {
@@ -20,7 +22,7 @@ exports.handler = async (event) => {
             body: JSON.stringify({ estimates: data.Items }),
             headers: {
                 'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*', // Enable CORS
+                'Access-Control-Allow-Origin': ALLOWED_ORIGIN, // Enable CORS
                 'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
             }
         };
@@ -33,7 +35,7 @@ exports.handler = async (event) => {
             body: JSON.stringify({ message: 'Internal Server Error', error: error.message }),
             headers: {
                 'Content-Type': 'application/json',
-                'Access-Control-Allow-Origin': '*', // Enable CORS
+                'Access-Control-Allow-Origin': ALLOWED_ORIGIN, // Enable CORS
                 'Access-Control-Allow-Methods': 'GET,POST,OPTIONS',
             }
         };
