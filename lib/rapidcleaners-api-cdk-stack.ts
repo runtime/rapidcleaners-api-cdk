@@ -12,11 +12,15 @@ import { join } from 'path';
 
 export class RapidcleanersApiCdkStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
-    super(scope, id, props);
+
 
     // Define the environment - can be 'dev', 'stage', or 'prod'
-    let environment = 'stage'; // Adjust this manually as needed
+    let environment = 'dev'; // Adjust this manually as needed
     console.log('RapidEnvironment:', environment)
+
+    const stackName = `RapidCleanAPI-${environment}`;
+
+    super(scope, stackName, { ...props, stackName });
 
     // Correct structure for allowedOrigins
     const allowedOriginsMap: { [key: string]: string[] } = {
