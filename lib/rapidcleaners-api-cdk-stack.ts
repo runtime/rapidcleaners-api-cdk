@@ -157,7 +157,16 @@ export class RapidcleanersApiCdkStack extends cdk.Stack {
 
     const getOneEstimateLambda = new NodejsFunction(this, `getOneEstimateLambda-${environment}`, {
       entry: join(__dirname, '../functions', 'getOneEstimate.js'),
-      ...nodejsFunctionProps,
+      runtime: Runtime.NODEJS_16_X,
+      handler: 'handler',
+      bundling: {
+        externalModules: ['aws-sdk'],
+      },
+      environment: {
+        TABLE_NAME: estimatesTable.tableName,
+        ALLOWED_ORIGIN: currentAllowedOrigins[0],
+        NODE_ENV: environment, // Ensure this is correct
+      },
     });
 
 
