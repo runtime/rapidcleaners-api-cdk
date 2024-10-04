@@ -25,8 +25,8 @@ export class RapidcleanersApiCdkStack extends cdk.Stack {
     // Correct structure for allowedOrigins
     const allowedOriginsMap: { [key: string]: string[] } = {
       dev: ['http://localhost:3000'],
-      stage: ['http://rapidcleanstage.s3-website-us-east-1.amazonaws.com'],
-      prod: ['http://rapidcleanprod.s3-website-us-east-1.amazonaws.com'],
+      stage: ['http://stage.rapidclean.ninja'],
+      prod: ['http://rapidclean.ninja'],
     };
 
     // Get allowed origins based on the environment
@@ -34,7 +34,7 @@ export class RapidcleanersApiCdkStack extends cdk.Stack {
 
     // Use RemovalPolicy.RETAIN for production and DESTROY for other environments
     const removalPolicy =
-        environment === 'prod' ? RemovalPolicy.RETAIN : RemovalPolicy.DESTROY;
+        environment === 'prod' || environment ==='stage' ? RemovalPolicy.RETAIN : RemovalPolicy.DESTROY;
 
 
     // DynamoDB Tables
@@ -78,7 +78,7 @@ export class RapidcleanersApiCdkStack extends cdk.Stack {
 
     const rcMediaBucket = new s3.Bucket(this, `rc-media-s3-${environment}`, {
       removalPolicy: RemovalPolicy.DESTROY,
-      autoDeleteObjects: true,
+      autoDeleteObjects: environment !== 'prod',
       cors: [
         {
           allowedOrigins: currentAllowedOrigins, // Use the current environment's allowed origins
