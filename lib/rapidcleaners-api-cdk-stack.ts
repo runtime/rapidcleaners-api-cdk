@@ -15,7 +15,7 @@ export class RapidcleanersApiCdkStack extends cdk.Stack {
 
 
     // Define the environment - can be 'dev', 'stage', or 'prod'
-    let environment = 'dev'; // Adjust this manually as needed
+    let environment = 'stage'; // Adjust this manually as needed
     console.log('RapidEnvironment:', environment)
 
     const stackName = `RapidCleanAPI-${environment}`;
@@ -25,8 +25,8 @@ export class RapidcleanersApiCdkStack extends cdk.Stack {
     // Correct structure for allowedOrigins
     const allowedOriginsMap: { [key: string]: string[] } = {
       dev: ['http://localhost:3000'],
-      stage: ['http://stage.rapidclean.ninja'],
-      prod: ['http://rapidclean.ninja'],
+      stage: ['https://stage.rapidclean.ninja'],
+      prod: ['https://rapidclean.ninja'],
     };
 
     // Get allowed origins based on the environment
