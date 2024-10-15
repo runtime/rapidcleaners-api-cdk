@@ -3,52 +3,71 @@
 var AWS = require("aws-sdk");
 var dynamoDb = new AWS.DynamoDB.DocumentClient();
 var TABLE_NAME = process.env.TABLE_NAME;
-var ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN; // Ensure allowed origin from environment variables
+var ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN;
 
 exports.handler = async (event) => {
     try {
-        const body = JSON.parse(event.body); // Assuming the userId and estimateId are in the request body
+        const body = JSON.parse(event.body);
+        console.log('[validateUser] event.body:', event.body);
+
         const { estimateId, userId } = body;
 
-        if (!estimateId || !userId) {
+        console.log('[validateUser] estimateId from event.body:', estimateId);
+        console.log('[validateUser] userId from event.body:', userId);
+
+        // Validate input
+        if (!estimateId) {
+            console.log('[validateUser] Missing estimateId')
             return {
                 statusCode: 400,
                 headers: {
-                    'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
-                    'Access-Control-Allow-Methods': 'POST,OPTIONS',
+                    "Content-Type": "application/json",
+                    "Access-Control-Allow-Methods": "POST,OPTIONS",
+                    "Access-Control-Allow-Origin": ALLOWED_ORIGIN,
                 },
-                body: JSON.stringify({ message: "Missing estimateId or userId." })
+                body: JSON.stringify({ message: "Missing estimateId." })
             };
         }
 
-        // Query the DynamoDB table to find the estimate
+        // Query the estimate by estimateId
         const params = {
             TableName: TABLE_NAME,
             Key: {
-                estimateId: estimateId
+                estimateId: estimateId, // Query by estimateId only
             }
         };
 
         const result = await dynamoDb.get(params).promise();
+
+        console.log('[validateUser] result:', result);
+        console.log('[validateUser] result.Item:', result.Item);
+        console.log('[validateUser] result.Item.servicedetails:', result.Item.servicedetails);
+
+
         if (!result.Item) {
             return {
                 statusCode: 404,
                 headers: {
-                    'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
-                    'Access-Control-Allow-Methods': 'POST,OPTIONS',
+                    "Content-Type": "application/json",
+                    "Access-Control-Allow-Methods": "POST,OPTIONS",
+                    "Access-Control-Allow-Origin": ALLOWED_ORIGIN,
                 },
                 body: JSON.stringify({ message: "Estimate not found." })
             };
         }
 
-        // Check if the userId matches
         const estimate = result.Item;
+
+        console.log('[validateUser] estimate.servicedetails.userID:', estimate.servicedetails.userID);
+
+        // Compare userId from the request with userID in the estimate's servicedetails
         if (estimate.servicedetails.userID === userId) {
             return {
                 statusCode: 200,
                 headers: {
-                    'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
-                    'Access-Control-Allow-Methods': 'POST,OPTIONS',
+                    "Content-Type": "application/json",
+                    "Access-Control-Allow-Methods": "POST,OPTIONS",
+                    "Access-Control-Allow-Origin": ALLOWED_ORIGIN,
                 },
                 body: JSON.stringify({ message: "User authenticated successfully.", estimate: estimate })
             };
@@ -56,19 +75,22 @@ exports.handler = async (event) => {
             return {
                 statusCode: 403,
                 headers: {
-                    'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
-                    'Access-Control-Allow-Methods': 'POST,OPTIONS',
+                    "Content-Type": "application/json",
+                    "Access-Control-Allow-Methods": "POST,OPTIONS",
+                    "Access-Control-Allow-Origin": ALLOWED_ORIGIN,
                 },
                 body: JSON.stringify({ message: "UserID does not match the estimate." })
             };
         }
 
     } catch (error) {
+        console.error('[validateUser] error:', error.message);
         return {
             statusCode: 500,
             headers: {
-                'Access-Control-Allow-Origin': ALLOWED_ORIGIN,
-                'Access-Control-Allow-Methods': 'POST,OPTIONS',
+                "Content-Type": "application/json",
+                "Access-Control-Allow-Methods": "POST,OPTIONS",
+                "Access-Control-Allow-Origin": ALLOWED_ORIGIN,
             },
             body: JSON.stringify({ message: "Internal Server Error", error: error.message })
         };
