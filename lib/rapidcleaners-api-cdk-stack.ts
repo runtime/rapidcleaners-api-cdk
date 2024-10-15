@@ -15,7 +15,7 @@ export class RapidcleanersApiCdkStack extends cdk.Stack {
 
 
     // Define the environment - can be 'dev', 'stage', or 'prod'
-    let environment = 'stage'; // Adjust this manually as needed
+    let environment = 'dev'; // Adjust this manually as needed
     console.log('RapidEnvironment:', environment)
 
     const stackName = `RapidCleanAPI-${environment}`;
