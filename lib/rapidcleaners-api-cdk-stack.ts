@@ -219,6 +219,28 @@ export class RapidcleanersApiCdkStack extends cdk.Stack {
       ...nodejsFunctionProps,
     });
 
+    // Inside the constructor
+
+// Temporary Validation -  Lambda function for userId -> EstimateId validation
+    const validateUserLambda = new NodejsFunction(this, `validateUserLambda-${environment}`, {
+      entry: join(__dirname, '../functions', 'validateUser.js'),
+      runtime: Runtime.NODEJS_16_X,
+      handler: 'handler',
+      bundling: {
+        externalModules: ['aws-sdk'],
+      },
+      environment: {
+        TABLE_NAME: estimatesTable.tableName,
+        ALLOWED_ORIGIN: currentAllowedOrigins[0],
+        NODE_ENV: environment,
+      },
+    });
+
+
+
+
+
+
     // Lambda Functions for CRUD Operations on Locations
     const getAllLocationsLambda = new NodejsFunction(this, `getAllLocationsLambda-${environment}`, {
       entry: join(__dirname, '../functions', 'getAllLocations.js'),
@@ -326,6 +348,7 @@ export class RapidcleanersApiCdkStack extends cdk.Stack {
     estimatesTable.grantReadWriteData(createEstimateLambda);
     estimatesTable.grantReadWriteData(updateEstimateLambda);
     estimatesTable.grantReadWriteData(deleteEstimateLambda);
+    estimatesTable.grantReadData(validateUserLambda);
 
     usersTable.grantReadWriteData(getAllUsersLambda);
     usersTable.grantReadWriteData(getOneUserLambda);
@@ -355,7 +378,13 @@ export class RapidcleanersApiCdkStack extends cdk.Stack {
     // added this from experience
     addCorsOptions(rapidcleanAPI.root, currentAllowedOrigins);
 
-    // Add CORS Options and Lambda integrations to the API resources
+    //validation root
+    // API Gateway Resource for Estimate User Validation
+    const validation = rapidcleanAPI.root.addResource('validate');
+    validation.addMethod('POST', new api.LambdaIntegration(validateUserLambda));
+    addCorsOptions(validation, currentAllowedOrigins);
+
+    //Bookings root
     const bookings = rapidcleanAPI.root.addResource('bookings');
     bookings.addMethod('POST', new api.LambdaIntegration(createBookingLambda));
     addCorsOptions(bookings, currentAllowedOrigins);
@@ -383,6 +412,7 @@ export class RapidcleanersApiCdkStack extends cdk.Stack {
     singleUser.addMethod('PUT', new api.LambdaIntegration(updateUserLambda));
     singleUser.addMethod('DELETE', new api.LambdaIntegration(deleteUserLambda));
     addCorsOptions(singleUser, currentAllowedOrigins);
+
 
     // API Gateway Resources and Methods for Locations
     const locations = rapidcleanAPI.root.addResource('locations');
