@@ -5,7 +5,7 @@ var dynamoDb = new AWS.DynamoDB.DocumentClient();
 var TABLE_NAME = process.env.TABLE_NAME; // Ensure the table name for locations is set in the environment variables
 var ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN; // Read allowed origin from environment variable
 
-
+c
 exports.handler = async (event) => {
     console.log("[getOneLocation] Received event:", JSON.stringify(event, null, 2));
 

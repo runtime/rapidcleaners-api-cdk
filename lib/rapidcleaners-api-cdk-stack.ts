@@ -12,17 +12,21 @@ import { join } from 'path';
 
 export class RapidcleanersApiCdkStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
-    super(scope, id, props);
+
 
     // Define the environment - can be 'dev', 'stage', or 'prod'
     let environment = 'stage'; // Adjust this manually as needed
     console.log('RapidEnvironment:', environment)
 
+    const stackName = `RapidCleanAPI-${environment}`;
+
+    super(scope, stackName, { ...props, stackName });
+
     // Correct structure for allowedOrigins
     const allowedOriginsMap: { [key: string]: string[] } = {
       dev: ['http://localhost:3000'],
-      stage: ['http://rapidcleanstage.s3-website-us-east-1.amazonaws.com'],
-      prod: ['http://rapidcleanprod.s3-website-us-east-1.amazonaws.com'],
+      stage: ['https://stage.rapidclean.ninja'],
+      prod: ['https://rapidclean.ninja'],
     };
 
     // Get allowed origins based on the environment
@@ -30,7 +34,7 @@ export class RapidcleanersApiCdkStack extends cdk.Stack {
 
     // Use RemovalPolicy.RETAIN for production and DESTROY for other environments
     const removalPolicy =
-        environment === 'prod' ? RemovalPolicy.RETAIN : RemovalPolicy.DESTROY;
+        environment === 'prod' || environment ==='stage' ? RemovalPolicy.RETAIN : RemovalPolicy.DESTROY;
 
 
     // DynamoDB Tables
@@ -74,7 +78,7 @@ export class RapidcleanersApiCdkStack extends cdk.Stack {
 
     const rcMediaBucket = new s3.Bucket(this, `rc-media-s3-${environment}`, {
       removalPolicy: RemovalPolicy.DESTROY,
-      autoDeleteObjects: true,
+      autoDeleteObjects: environment !== 'prod',
       cors: [
         {
           allowedOrigins: currentAllowedOrigins, // Use the current environment's allowed origins
@@ -153,7 +157,16 @@ export class RapidcleanersApiCdkStack extends cdk.Stack {
 
     const getOneEstimateLambda = new NodejsFunction(this, `getOneEstimateLambda-${environment}`, {
       entry: join(__dirname, '../functions', 'getOneEstimate.js'),
-      ...nodejsFunctionProps,
+      runtime: Runtime.NODEJS_16_X,
+      handler: 'handler',
+      bundling: {
+        externalModules: ['aws-sdk'],
+      },
+      environment: {
+        TABLE_NAME: estimatesTable.tableName,
+        ALLOWED_ORIGIN: currentAllowedOrigins[0],
+        NODE_ENV: environment, // Ensure this is correct
+      },
     });
 
 

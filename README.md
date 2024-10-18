@@ -69,3 +69,18 @@ run locally and/or deploy to aws
 
 
 * `cdk destroy`  destroy this stack to your default AWS account/region
+
+
+export ENVIRONMENT=dev
+cdk synth
+cdk deploy
+
+export ENVIRONMENT=stage
+cdk synth
+cdk deploy
+
+export ENVIRONMENT=prod
+cdk synth
+cdk deploy
+
+
