@@ -50,6 +50,11 @@ Be sure to install the plugins for aws and aws-cli as well as sam and aws-cdk-li
 whether you are using terminal and CLI or an IDK with the AWS SDK
 run locally and/or deploy to aws
 
+### Setting the env ['dev', 'stage', 'prod']
+```
+    let environment = 'stage'; // Adjust this manually as needed
+```
+
 
 ## Useful commands
 
@@ -58,6 +63,24 @@ run locally and/or deploy to aws
 * `npm run test`    perform the jest unit tests
 
 * `cdk bootstap` allows you to authenticate if you don't already have a .aws/credentials
-* `cdk deploy`  deploy this stack to your default AWS account/region
 * `cdk diff`    compare deployed stack with current state
 * `cdk synth`   emits the synthesized CloudFormation template
+* `cdk deploy`  deploy this stack to your default AWS account/region
+
+
+* `cdk destroy`  destroy this stack to your default AWS account/region
+
+
+export ENVIRONMENT=dev
+cdk synth
+cdk deploy
+
+export ENVIRONMENT=stage
+cdk synth
+cdk deploy
+
+export ENVIRONMENT=prod
+cdk synth
+cdk deploy
+
+
